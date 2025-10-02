@@ -1,6 +1,74 @@
-######################################################
-#  CONFIDENCE OF TREATMENT EFFECT IN A GENERATED TRIAL
-######################################################
+#' @title Frequentist Confidence-Adaptive Trial Simulation
+#' @description Simulates a group sequential clinical trial whose result is evaluated via frequentist confidence analysis.
+#'
+#' @details
+#' Run simulations of a confidence based adaptive clinical trial for any number of arms and stages.
+#' At each analysis point, the confidence in treatment benefit and futility is evaluation and arms may be dropped or continued based on the trial settings.
+#' The trial may also be run perpetually, with new treatment arms being added once arms are dropped, as an adaptive platform trial.
+#' The confidence-based thresholds are derived using alpha spending function, or specified with a fixed alpha.
+#'
+#' @param sim.no Simulation number, when running mutiple simulations of a trial.
+#' @param inputs A list of items fed to the function which parameterize the trial to be simulated.
+#' The list of input options can be found in the documentation to the getparlist function.
+#' @param save.plot Whether or not to save confidence curve plot with the result.TRUE (yes) or FALSE (no).
+#'  When running multiple simulations, FALSE is recommended. If TRUE, files will be saved to the specified directory.
+#'  The filename is automatically generated according to trial settings. Default is FALSE. Passed to makeConfidenceCurves function.
+#' @param show If saving confidence curves, what to show on the confidence density plot. Options are "BENEFIT" (default), "LMB" (lack of meaningful benefit),
+#' "MB" (meaningful benefit) or "EQUIV" (equivalence). Passed to makeConfidenceCurves function.
+#' @param directory Working directory. Used to save Random State, and trial results. A subdirectory is created based on the current node
+#' to allow for parallel computing across multiple nodes. Random State is checkpointed throughout the code and saved in the subdirectory 'directory/<node>/'.
+#' Results are saved in the same places as the Random States.
+#' @param reproduce To reproduce a result from saved Random States. If setting as TRUE, make sure the directory parameter points to the location (the node subdirectory)
+#' where the Random States are saved. The results will be saved to this directory. If set as FALSE (default), results and Random States are saved to the node subdirectory.
+#' @param print. Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
+#' Not recommended if running a high number of simulation.
+#' @return Object where each line is the result of confidence analysis for a given arm, at a given stage.
+#' The number of lines is number experimental treatments * number of stages. E.g. A two-arm-two-stage trial returns a two-line object.
+#' @return Attributes in output object:
+#' \itemize{
+#' \item{"sim.no: "}{simulation number}
+#' \item{"arm": }{arm number starting from 2 as 1 is control}
+#' \item{"interim.arm": }{stage number of this arm (will differ from interim.total if arm was added later)}
+#' \item{"interim.total": }{interim number for trial}
+#' \item{"mean": }{point estimate}
+#' \item{"standard.error": }{standard error associated with point estimate}
+#' \item{"resp.ctrl": }{for binary data, resulting control response rate}
+#' \item{"resp.trmt": }{for binary data, resulting treatment response rate}
+#' \item{"conf.benefit": }{confidence in treatment benefit}
+#' \item{"conf.lack.meaningful.benefit": }{confidence in lack of meaningful benefit}
+#' \item{"action": }{Decision taken at this analysis point e.g. stop early, continue}
+#' \item{"N.looks": }{Number of looks (analysis points) in this trial design}
+#' \item{"misc": }{Information passed into getparlist function by the 'special' parameter. Can be anything of interest}
+#' \item{"N.arm": }{Number recruited to this treatment arm}
+#' \item{"N.pair": }{Number of patients in this two-arm (pairwise) analysis against control}
+#' \item{"N.known": }{Number of patients with a known outcome (prespecified in trial settings)}
+#' \item{"N": }{Total number of patients recruited so far. Will be different from N.known if there is a follow-up period.}
+#' }
+#' @export
+#' @examples
+#' # Example of input list to generate a two-arm-two-stage trial with binary outcome data
+#'
+#' inputs <- list(
+#'  outcome.type = "BINARY", # binary outcome data
+#'  estimator.type = 'risk diff', # primary outcome is risk difference
+#'  lmb = 0.1, # risk difference < 0.1 lacks meaningful benefit
+#'  multiarm.mode='MONITOR FUTILITY', # only monitor for futility
+#'  alpha = 0.0125, # fixed alpha threshold to determine treatment efficacy
+#'  alloc.ratio = c(1,1), # allocation ratio
+#'  num.per.block = c(1,1), # number per block for blocked allocation
+#'  final.visit = 0, # time in days after which follow-up data becomes available
+#'  ppm = rep(25, 15), # patients accrued each month for the entire trial period.
+#'  looks = c(107, 214), # number of patients accrued at each look time, nmax = 214.
+#'  perpetual=FALSE, # not a perpetual trial.
+#'  resprate =  c(0.5, 0.6), # response rate for each arm
+#'  lmb.conf.thres=0.95, # treatment arm is futility is the confidence in LMB is greater than 0.95
+#'  special = paste0(0.5, '_', 0.6) # passing the response rates to special to add to the output
+#')
+#' # run a single simulation with these settings
+#'conf <- runSingleTrial(input=inputs, save.plot=FALSE, print=TRUE, directory = '')
+#'# run 4 simulations with these settings
+#'conf <- lapply(1:4, runSingleTrial, inputs=inputs,  save.plot=FALSE, print=FALSE, directory = '')
+
 
 ####################
 # RUN A SINGLE TRIAL
@@ -9,7 +77,7 @@
 runSingleTrial <- function(
     sim.no=0,
     inputs=NULL,
-    plot=FALSE,
+    save.plot=FALSE,
     show="BENEFIT",
     directory="",
     reproduce=FALSE,
@@ -21,9 +89,9 @@ runSingleTrial <- function(
       directory = paste0(directory, "/")
     }
     # make for this node
-    directory = paste0(directory, Sys.getpid(), "/")
+    subdirectory = paste0(directory, Sys.getpid(), "/")
     # create it
-    dir.create(file.path(directory), showWarnings = FALSE, recursive = TRUE)
+    dir.create(file.path(subdirectory), showWarnings = FALSE, recursive = TRUE)
   }
 
   # get the parameter list from "inputs"
@@ -42,14 +110,12 @@ runSingleTrial <- function(
     # load saved seed
     load(paste0(directory, "random_state_accrual.RData"))
   } else {
-
     # check if a seed has been explicitly set
     if (!exists(".Random.seed", envir = .GlobalEnv)){
       set.seed(613)
     }
-
     # save state
-    save(".Random.seed",file=paste0(directory, "random_state_accrual.RData"))
+    save(".Random.seed",file=paste0(subdirectory, "random_state_accrual.RData"))
   }
 
   # get time of patient arrival, in terms of months since trial commence
@@ -78,7 +144,7 @@ runSingleTrial <- function(
   if (reproduce){
     load(paste0(directory, "random_state_allocation.RData"))
   } else {
-    save(".Random.seed",file=paste0(directory, "random_state_allocation.RData"))
+    save(".Random.seed",file=paste0(subdirectory, "random_state_allocation.RData"))
   }
 
   # allocate patients to treatment arm
@@ -111,7 +177,7 @@ runSingleTrial <- function(
   if (reproduce){
     load(paste0(directory, "random_state_outcome.RData"))
   } else {
-    save(".Random.seed",file=paste0(directory, "random_state_outcome.RData"))
+    save(".Random.seed",file=paste0(subdirectory, "random_state_outcome.RData"))
   }
 
   # (binary/ordinal/continuous)
@@ -162,6 +228,12 @@ runSingleTrial <- function(
   # What is the time at each interim analysis point (looktime), starting with 0
   looktimes = rep(0, parlist$num.looks + 1)
 
+  # where to save results. Save it directory for REPRODUCE=TRUE and subdirectory for REPRODUCE=FALSE
+  # but as we have no more checkpoints, we can merge the two
+
+  if (!reproduce){
+    directory = subdirectory
+  }
 
   ##############################
   # LOOKS, AND PAIRWISE ANALYSES
@@ -455,7 +527,8 @@ runSingleTrial <- function(
           pval=sided,
           directory=directory,
           tag=tag.arm,
-          save.plot=plot,
+          save.plot=save.plot,
+          return.plot = FALSE,
           min.effect = parlist$lmb.threshold,
           dir.benefit=1)
 
@@ -583,7 +656,8 @@ runSingleTrial <- function(
                                                             pval=sided,
                                                             directory=directory,
                                                             tag=tag.arm ,
-                                                            return.plot=plot,
+                                                            return.plot=FALSE,
+                                                            save.plot = save.plot,
                                                             min.effect = parlist$lmb.threshold,
                                                             dir.benefit = dir.benefit)
 
@@ -700,7 +774,8 @@ runSingleTrial <- function(
           pval=toupper(sided),
           directory=directory,
           tag=tag.arm ,
-          return.plot=plot,
+          return.plot=FALSE,
+          save.plot = save.plot,
           min.effect = parlist$lmb.threshold,
           neutral.effect = 0,
           dir.benefit = dir.benefit)
@@ -908,42 +983,42 @@ runSingleTrial <- function(
 }
 
 
-#######
-# TEST
-#######
-
-
-testTrial <- function(directory = "./test"){
-
-  #  TWO ARM 3-STAGE 16-POINT ORDINAL OUTCOME
-
-  resprate = list(ctrl = rep(1/16, 16), trmt=c(
-    0.08119658, 0.07802130,
-    0.07502870,0.07220504,
-    0.06953783,0.06701574,
-    0.06462841, 0.06236641,
-    0.06022113,0.05818467,
-    0.05624978, 0.05440984,
-    0.05265872, 0.05099079,
-    0.04940088, 0.04788419))
-
-  inputs <- list(
-    lmb = 1.10,
-    as.type = 'asOF',
-    outcome.type = "ORDINAL",
-    multiarm.mode='CONFIDENCE-BASED',
-    alloc.ratio = c(1,1),
-    num.per.block = c(1,1),
-    final.visit = 180,
-    ppm = rep(20, 300),
-    perpetual=FALSE,
-    resprate=resprate,
-    looks=c(500,1000,1500)
-  )
-
-  print("INPUT VECTOR:")
-  print(inputs)
-  conf=runSingleTrial(inputs=inputs, plot=FALSE, show='BENEFIT', directory = '/Users/fwerdiger/Documents/MBC/confidence_trials/diabetes/simulation_studies/', print=TRUE)
-
-  return(conf)
-}
+# #######
+# # TEST
+# #######
+#
+#
+# testTrial <- function(directory = "./test"){
+#
+#   #  TWO ARM 3-STAGE 16-POINT ORDINAL OUTCOME
+#
+#   resprate = list(ctrl = rep(1/16, 16), trmt=c(
+#     0.08119658, 0.07802130,
+#     0.07502870,0.07220504,
+#     0.06953783,0.06701574,
+#     0.06462841, 0.06236641,
+#     0.06022113,0.05818467,
+#     0.05624978, 0.05440984,
+#     0.05265872, 0.05099079,
+#     0.04940088, 0.04788419))
+#
+#   inputs <- list(
+#     lmb = 1.10,
+#     as.type = 'asOF',
+#     outcome.type = "ORDINAL",
+#     multiarm.mode='CONFIDENCE-BASED',
+#     alloc.ratio = c(1,1),
+#     num.per.block = c(1,1),
+#     final.visit = 180,
+#     ppm = rep(20, 300),
+#     perpetual=FALSE,
+#     resprate=resprate,
+#     looks=c(500,1000,1500)
+#   )
+#
+#   print("INPUT VECTOR:")
+#   print(inputs)
+#   conf=runSingleTrial(inputs=inputs, plot=FALSE, show='BENEFIT', directory = '/Users/fwerdiger/Documents/MBC/confidence_trials/diabetes/simulation_studies/', print=TRUE)
+#
+#   return(conf)
+# }
