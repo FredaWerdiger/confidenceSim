@@ -1,24 +1,54 @@
-
-##########################################################
-# FUNCTIONS FOR DESIGN AND SIMULATION OF CONFIDENCE TRIALS
-##########################################################
+# Functions used in the design and simulation of confidence trials
 
 
-# GENERATING GROUP SEQUENTIAL STOPPING BOUNDARIES FOR TWO ARMS
+#' Get Group Sequential Design
+#' @description Generate boundaries for a group sequential design using a one-sided test
+#' @details To generate confidence-based thresholds, we are interested in a one-sided test and alpha is set at 0.025.
+#' To generate the stopping thresholds, specify either looks or information rates, and the alpha spending function if
+#' difference from O-Brien-Fleming-type.
+#'
+#' @param info.rates Analysis times expressed as rate of information accrual. Expects a vector
+#' with the last item representing the final analysis and equal to 1.
+#' For example, information rates for two-stage trial with interim analysis half way through is c(0.5, 1).
+#' One of two options for expressing analysis times. Either 'info.rates' or 'looks' must be specified.
+#' @param looks Analysis times expressed by number of patients accrued at each point. Expects a vector
+#' with the last item being equal to the maximum sample size. For example.
+#' looks for a three stage trial with maximum sample size of 300 and analysis planned every 100 patients is c(100, 100, 100).
+#' One of two options for expressing analysis times. Either 'info.rates' or 'looks' must be specified.
+#' @param as.type Time of alpha spending function to use. Options are as outlined by 'rpact'.
+#' Default is 'asOF' \(O'Brien-Fleming-type\).
+#'
+#' @return Returns an 'rpact' TrialDesign object.
+#' @seealso [rpact::getDesignGroupSequential()]
+#' @export
+#'
+#' @examples
+#' # calculate critical values for a two-stage trial with an interim analysis half-way through
+#' # Use Pocock-type alpha spending
+#' design <- getGSDesign(info.rates = c(0.5, 1), as.type = 'asP')
+#' critical.stagewise.alpha.levels <- design$stageLevels
+#'
+#' # calculate values for a 6-stage trial with a maximum sample size of 1000
+#' # interim analysis begins at 500 patients accrued and continues every 100 patients after
+#' design <- getGSDesign(looks = seq(500, 1000, 100))
+#'
+
 getGSDesign <- function(info.rates=NULL, looks=NULL,  as.type="asOF"){
-  # interim analysis times can be provided as either:
-  # info.rates: interim analysis times in (0,1]
-  # looks: analysis times by numbers of subjects
-  # as.type: type of alpha-spending function
+
   if (is.null(looks) & is.null(info.rates)){
     stop("Looks or information rates is required.")
   }
   if (!is.null(looks)) {
-    num.looks = length(looks) # num looks
+    num.looks = length(looks)
     t = looks/max(looks) #
   }
   if (!is.null(info.rates)){
     t = info.rates
+  }
+  if (! as.type %in% c("OF", "P", "WT", "PT", "HP", "WToptimum", "asP", "asOF", "asKD",
+                       "asHSD", "asUser", "noEarlyEfficacy")){
+    print(pastt0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
+    as.type = "asOF"
   }
   # using a one-sided test for confidence threshold
   alpha = 0.025
@@ -33,10 +63,30 @@ getGSDesign <- function(info.rates=NULL, looks=NULL,  as.type="asOF"){
 }
 
 
-# GET CONFIDENCE THRESHOLDS FROM GS DESIGN BOUNDS
+#' Get Confidence Levels from Group Sequential Bounds
+#' @description Derive confidence-based decision thresholds for efficacy and inferiority from a group sequential design.
+#' @param design TrialDesign object generated from 'getGSDesign'.
+#' @seealso [getGSDesign()]
+#'
+#' @return List of values:
+#' \itemize{
+#' \item{critical.values}{Critical z-levels at each stage}
+#' \item{alpha.spending.one.sided}{One-sided alpha critical values for each stage}
+#' \item{alpha.spending.cumulative}{One-sided alpha accumulated by each stage}
+#' \item{confidence.threshold.efficacy}{Upper bounds for confidence i.e. declare efficacy if exceeded}
+#' \item{confidence.threshold.inferiority}{Lower bounds for confidence i.e. declare inferiority if below}
+#' }
+#'
+#' @export
+#'
+#' @examples
+#' # confidence bounds for a 6-stage trial with a maximum sample size of 1000
+#' bounds <- getConfidenceFromBounds(getGSDesign(looks=seq(500, 1000, 100)))
+#'
+
 getConfidenceFromBounds <- function(design){
   if (typeof(design)!="environment"){
-    stop("Function expecting input from getDesignGroupSequential function.")
+    stop("Function expecting TrialDesign object.")
   }
   # for efficacy
   confidence.threshold = 1 - design$stageLevels
@@ -49,21 +99,53 @@ getConfidenceFromBounds <- function(design){
   return(bounds)
 }
 
-# GET GS BOUNDS FROM CONFIDENCE THRESHOLDS
-getBoundsFromConfidence <- function(min.effect.size=0,
-                                    num.treat.arms=2,
+
+#' Get Critical Bounds from Confidence Thresholds
+#'
+#' @description
+#' Derive traditional frequentist critical values from frequentist confidence thresholds for confidence in treatment benefit.
+#'
+#' @details
+#' During a confidence trial, efficacy and inferiority is determined by the level of confidence in treatment benefit.
+#' Efficacy is declared if this confidence level exceeds a pre-specified boundary,
+#' and inferiority is declared if this confidence levels falls below a second pre-specified valye.
+#' Given confidence-based thresholds for efficacy and inferiority, and the
+#' sidedness of the test, this function returns the traditional frequentist p-value.
+#'
+#'
+#' @param num.treat.arms Number of treatment arms (excludes control). Default is 2.
+#' @param conf.lower Confidence in treatment benefit boundary for inferiority i.e. stop for inferiority if confidence in benefit is below this.
+#' Default is 0.01.
+#' @param conf.upper Confidence in treatment benefit boundary for efficacy i.e. stop for efficacy if confidence in benefit is above this.
+#' Default is 0.99.
+#' @param p.sided Sidedness of statistical test, 1 (one-sided) and 2 (two-sided). Default is 1.
+#'
+#' @return List of values:
+#' \itemize{
+#' \item{conf.lower: confidence in treatment benefit lower bound}
+#' \item{z.score.lower: critical value corresponding to lower confidence bound}
+#' \item{p.value.lower: p-value correponding to lower confidence bound}
+#' \item{conf.upper: confidence in treatment benefit upper bound}
+#' \item{z.score.upper: critical value corresponding to upper confidence bound}
+#' \item{p.value.upper: p-value corresponding to upper confidence bound}
+#' \item{p.value: sidedness of test}
+#' }
+#'
+#' @export
+#'
+#' @examples
+#' # Running the function on default values
+#' bounds <- getBoundsFromConfidence()
+#'
+#' # to make adjustments for multiple arms
+#' bounds <- getBoundsFromConfidence(num.treat.arms = 3)
+#'
+getBoundsFromConfidence <- function(num.treat.arms=2,
                                     conf.lower=0.01,
                                     conf.upper=0.99,
-                                    dir.benefit=0,
                                     p.sided=1
 ){
-  # min.effect.size: minimum interesting treatment effect
-  # num.treat.arms: number of treatment arms excluding the control
-  # dir.benefit: direction of treatment benefit for log odds; 0: < 0 and 1: >0.
-  # conf.lower/conf.upper: stopping boundaries for inferiority and superiority
-  # p.sided: one or two sided test for interim. Final analysis p-value is by default 2 sided
-
-  # as per ACT-GLOBAL if there are more than three treatment arms, the threshold is lower for each
+  # If there are more than three treatment arms, the lower threshold is lower for each arm
   if(num.treat.arms <=2){
     conf.lower = conf.lower
   } else if (num.treat.arms >2){
@@ -80,68 +162,57 @@ getBoundsFromConfidence <- function(min.effect.size=0,
     p.upper = (1 - conf.upper)*2
     p.lower = conf.lower * 2
   }
-  bounds = list(confidence.lower=conf.lower, z.score.lower=critical.value.lower,
-                p.value.lower=p.lower, confidence.upper=conf.upper, z.score.upper=critical.value.upper,
+  bounds = list(conf.lower=conf.lower, z.score.lower=critical.value.lower,
+                p.value.lower=p.lower, conf.upper=conf.upper, z.score.upper=critical.value.upper,
                 p.value.upper=p.upper, p.value=p.value)
+  return(bounds)
 }
 
-# FUNCTION FOR MULTIPLE ARMS AND MULTIPLE STAGES
-# This is not advised for more than two arms
-# As we are not correcting for multiplicities across treatment arms it is not relevant
-getMAMSsdesign <- function(info.rate=c(0.5,1),
-                           alloc.ratio=c(1,1),
-                           min.effect.perc=0.05, # the minimum effect we want to measure (default 5%)
-                           desired.one.sided.alpha=0.025, # FWER
-                           desired.power=0.8,
-                           sample.size=FALSE # want to get SS or only control FWER
-){
-  cumul.rate = info.rate / info.rate[1]
-  trmt.ratio = alloc.ratio[2:length(alloc.ratio)]
-  r0 = cumul.rate * alloc.ratio[1] # allocation rates for control arm at each stage, relative to treatment arms
-  r = cumul.rate * trmt.ratio[1] # allocation for treatment arms at each stage
-  if (length(info.rate) > 2){
-    warning("Not recommended for more that two stages")
-  }
-  if (length(trmt.ratio) > 1 & length(unique(trmt.ratio))>1){
-    warning("Can not accept different allocations ratios between experiemental arms.")
-  }
-  plan(multisession)
-  set.seed(1)
-  start.time <- Sys.time()
-  system.time(print(MAMS::mams(K=length(trmt.ratio), # n experimental treatments
-                               J=length(info.rate), # n stages
-                               r=r,
-                               r0=r0,
-                               p=0.5 + min.effect.perc,# interesting treatment effect
-                               p0=0.5, # uninteresting treatment effect
-                               alpha=desired.one.sided.alpha,
-                               power=desired.power,
-                               ushape="obf",
-                               sample.size = sample.size,
-                               print=TRUE, #verbose
-  )
-  )
-  )
-  end.time <- Sys.time()
-  end.time - start.time
-  return(list(
-    n.control.stage.1 = design$n,
-    critical.val.upper = m$u,
-    critical.val.lower = m$l,
-    stagewise.alpha = m$alpha.star
-  ))
-}
-
-
-# TODD: Include power analysis for sample size
-getSampleSize <- function(design, resp.rates){
-  pi1 = 1-resp.rates[2] # failure rate of treatment arm
-  pi2 = 1-resp.rates[1] # failure rate of control arm
-  riskRatio=FALSE # I think this is asking whether the effect is symmetric around 0
-  rpact::getSampleSizeRates(design=design, riskRatio = riskRatio, pi1=pi1, pi2=pi2)
-}
 
 # get a parameter list to generate trial
+#' Get Parameter List
+#' @description
+#' Generate a parameter list to generate a frequentist confidence trial
+#'
+#' @param looks Vector of analysis times expressed by either number of patients accrued at each point or by rate of information accumulated.
+#' If the former, last item should be the maximum sample size.
+#' If the latter, last item is 1.
+#' Expects a vector with length equal to the total number of total looks.
+#' @param nmax Maximum sample size, specified if information rates are used for 'looks'.
+#' @param perpetual Whether to run the trial perpetually (TRUE) or not (FALSE).
+#' If TRUE, new treatment arms will be added when treatment arms are dropped, until there are no more arms left.
+#' All treatments are included via the 'resprate' parameter. Default is FALSE.
+#' @param alloc.ratio Allocation ratios for study arms relative to each other.
+#' Expects vector with length equal to number of arms including control.
+#' First number corresponds to control ratio.
+#' @param num.per.block Number from each arm per block, for blocked randomization to balance co-variates.
+#' Block size is 'sum(num.per.block)'. If a single number is provided, it will be assume to apply to each arm.
+#' @param final.visit The number of days after intervention when the response information becomes available.
+#' @param as.type The type of alpha spending function to use in group sequential design.
+#'  Default is 'asOF', O'Brien-Fleming-type.
+#' @param alpha The alpha threshold to apply to each pairwise comparison to control in the final analysis.
+#' Used together with the 'MONITOR FUTILITY', when an alpha spending function is not needed.
+#' Default is 0.05, assuming a two-sided test.
+#' @param multiarm.mode For multiple treatment arms, describes how arms are evaluated at each stage:
+#' \itemize{
+#' \item{"CONFIDENCE-BASED"(default): Evaluate arms against confidence-based rules }
+#' \item{"DROP WORST": Drop the worst performing arm, and carry the remaining promising arms}
+#' \item{"SELECT BEST": Select the best performing arm to carry forward, drop the rest}
+#' \item{"ALL PROMISING": Carry forward all promising arms}
+#' \item{"MONITOR FUTILITY": Only monitor for futility}
+#' }
+#' @param lmb
+#' @param lmb.conf.thresh
+#' @param outcome.type
+#' @param estimator.type
+#' @param resprate
+#' @param ppm
+#' @param special
+#'
+#' @return
+#' @export
+#'
+#' @examples
 getparlist = function(looks=seq(500,1000,100),
                       nmax=NULL,
                       perpetual=FALSE,

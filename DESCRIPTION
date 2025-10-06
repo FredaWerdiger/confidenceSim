@@ -1,12 +1,23 @@
 Package: confidenceSim
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Highly Customizable, Parallelized Simulations of Frequentist
+    Confidence Clinical Trials
+Version: 0.1.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Freda", "Werdiger", , "freda.werdiger@unimelb.edu.au", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-5535-7117"))
+Description: Simulate one or many frequentist confidence clinical trials
+    based on a specified set of parameters.  From a two-arm, single-stage
+    trial to a perpetually run Adaptive Platform Trial, this package
+    offers vast flexibility to customize your trial and observe
+    operational characterisitics over thousands of instances.
+License: MIT + file LICENSE
 Encoding: UTF-8
+Language: es
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Imports: 
+    confidenceCurves (>= 0.2.0),
+    genodds (>= 1.1.2),
+    rpact (>= 4.0.0)
+Depends: 
+    R (>= 4.3)
