@@ -514,9 +514,10 @@ runSingleTrial <- function(
         }
 
         # odds ratios are converted to log
-        if (parlist$estimator.type == 'odds ratio'){
+        if (parlist$estimator.type %in% c('risk ratio', 'odds ratio')){
           parlist$lmb.threshold = log(parlist$lmb.threshold)
-        }
+          dir.benefit = 0
+        } else {dir.benefit = 1}
 
         confidence = confidenceCurves::makeConfidenceCurves(
           num.resp.ctrl = a,
@@ -531,7 +532,7 @@ runSingleTrial <- function(
           save.plot=save.plot,
           return.plot = FALSE,
           min.effect = parlist$lmb.threshold,
-          dir.benefit=1)
+          dir.benefit=dir.benefit)
 
         ## NOW CHECK CONFIDENCE AGAINST DECISION THRESHOLDS FOR EACH ARM
 

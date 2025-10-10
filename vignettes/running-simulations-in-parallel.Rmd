@@ -19,6 +19,7 @@ library(confidenceSim)
 library(dplyr)
 library(parallel)
 library(pbapply)
+set.seed(613)
 ```
 
 When running thousands of simulations, it is advisable to split the tasks across more than one node and run each node in parallel. This vignette will demonstrate one method to do this. The process is as follows:
@@ -27,7 +28,7 @@ When running thousands of simulations, it is advisable to split the tasks across
 
 -   Create a cluster of nodes with `parallel`
 
--   Split the simulations across nodes in the cluster with `pbapply`
+-   Split the simulations across nodes in the cluster with `pbapply` (and catch your errors!)
 
 -   Gather the results from across the clusters into a single data.frame
 
@@ -45,7 +46,76 @@ directory <- tempdir()
 res <- runSingleTrial(input=inputs, save.plot=FALSE, print=TRUE, directory = directory)
 ```
 
-## 2.  Initiate cluster
+## 2. Initiate cluster
+
+For this example we will run across two clusters.
 
 ```         
+clusters <- 2
+cl <- makeCluster(clusters)
 ```
+
+## 3. Run simulations in parallel
+
+`pblapply` allows you to run your simulations as you would with `lapply` across an array of numbers. The numbers get passed to `runSingleTrial` as the first input, `sim.no`. The simulation code is written so that results from one node are kept separate from each other. This is done by using `Sys.getpid()` to name a sub-directory to store the results from that node. This way, results are not overwritten.
+
+```         
+num.sims <- 4
+res.list <- pblapply(1:num.sims, runSingleTrial, inputs=inputs, save.plot=FALSE, directory=directory, cl=cl)
+```
+
+### Error handling
+
+Hopefully these run without error. However, if there is an error on any of the nodes, it will stop the whole process. The good news is, it is possible to instruct your code to skip to the next simulation if there is an error. In addition, you can log any errors by sending the error message to a text file. After the simulations have stopped running, you can read the error report.
+
+Create an error log:
+
+```         
+# make sure there is a slash
+if ((! endsWith(directory, "/")) & (! endsWith(directory, "\\"))){
+  directory = paste0(directory, "/")
+}
+error_log <- paste0(directory, "error_log.txt")
+
+# make sure it exists
+# Ensure the log file exists 
+if (!file.exists(error_log)) {
+  file.create(error_log)
+}
+```
+
+We will use a `tryCatch` structure. It is a bit messier so we have to manually export all variables into the clusters with `clusterExport`, something we didn't have to do above, for some reason.
+
+```         
+print <- FALSE
+save.plot <- TRUE
+clusterExport(cl, varlist = c("runSingleTrial", "inputs", "directory", "print", "save.plot", "error_log"))
+```
+
+Now encase the trial simulation in `tryCatch` and append the error to the error log file. The error message is printed along time a reference to the `special` parameter from `inputs`, which can be used to pass anything to `inputs`. In this case we've created a string for response rates.
+
+```         
+res.list <- pblapply(1:num.sims, function(i) {
+  tryCatch(
+    runSingleTrial(i, inputs=inputs, save.plot=save.plot, directory=directory, print=print),
+    error = function(e) {
+      # Append error message to the log file
+      message <- paste(Sys.time(), " - Error in simulation ", i, " for effect ",
+                       inputs$special, ": ", e$message, "\n")
+      cat(message, file = error_log,
+          append = TRUE)
+      NULL  # Optional: return NULL after logging
+    }
+  )
+}, cl=cl)
+```
+
+Stop the cluster once you don't need it anymore:
+
+```         
+stopCluster(cl)
+```
+
+## 4. Collect results from nodes
+
+Now we have to get the results.
