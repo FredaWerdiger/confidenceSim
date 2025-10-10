@@ -50,5 +50,4 @@ bounds <- getBoundsFromConfidence()
 
 # to make adjustments for multiple arms
 bounds <- getBoundsFromConfidence(num.treat.arms = 3)
-
 }

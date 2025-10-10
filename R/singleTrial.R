@@ -44,6 +44,7 @@
 #' \item{"N.known": }{Number of patients with a known outcome (prespecified in trial settings)}
 #' \item{"N": }{Total number of patients recruited so far. Will be different from N.known if there is a follow-up period.}
 #' }
+#'
 #' @export
 #' @examples
 #' # Example of input list to generate a two-arm-two-stage trial with binary outcome data
@@ -51,7 +52,7 @@
 #' inputs <- list(
 #'  outcome.type = "BINARY", # binary outcome data
 #'  estimator.type = 'risk diff', # primary outcome is risk difference
-#'  lmb = 0.1, # risk difference < 0.1 lacks meaningful benefit
+#'  lmb.threshold = 0.1, # risk difference < 0.1 lacks meaningful benefit
 #'  multiarm.mode='MONITOR FUTILITY', # only monitor for futility
 #'  alpha = 0.0125, # fixed alpha threshold to determine treatment efficacy
 #'  alloc.ratio = c(1,1), # allocation ratio

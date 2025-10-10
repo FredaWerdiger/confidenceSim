@@ -25,7 +25,6 @@ Derive confidence-based decision thresholds for efficacy and inferiority from a 
 \examples{
 # confidence bounds for a 6-stage trial with a maximum sample size of 1000
 bounds <- getConfidenceFromBounds(getGSDesign(looks=seq(500, 1000, 100)))
-
 }
 \seealso{
 \code{\link[=getGSDesign]{getGSDesign()}}

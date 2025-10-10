@@ -40,7 +40,6 @@ critical.stagewise.alpha.levels <- design$stageLevels
 # calculate values for a 6-stage trial with a maximum sample size of 1000
 # interim analysis begins at 500 patients accrued and continues every 100 patients after
 design <- getGSDesign(looks = seq(500, 1000, 100))
-
 }
 \seealso{
 \code{\link[rpact:getDesignGroupSequential]{rpact::getDesignGroupSequential()}}

@@ -1,0 +1,51 @@
+---
+title: "Running simulations in parallel"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{running-simulations-in-parallel}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(confidenceSim)
+library(dplyr)
+library(parallel)
+library(pbapply)
+```
+
+When running thousands of simulations, it is advisable to split the tasks across more than one node and run each node in parallel. This vignette will demonstrate one method to do this. The process is as follows:
+
+-   Create or load input parameters
+
+-   Create a cluster of nodes with `parallel`
+
+-   Split the simulations across nodes in the cluster with `pbapply`
+
+-   Gather the results from across the clusters into a single data.frame
+
+-   Summarize results with `dplyr`
+
+## 1. Load inputs
+
+Load the example parameter list stored as `inputs`. Test is out by running a single trial.
+
+```         
+# load data
+data(inputs)
+# create temporary directory
+directory <- tempdir()
+res <- runSingleTrial(input=inputs, save.plot=FALSE, print=TRUE, directory = directory)
+```
+
+## 2.  Initiate cluster
+
+```         
+```

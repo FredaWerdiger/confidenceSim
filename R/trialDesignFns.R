@@ -31,7 +31,6 @@
 #' # calculate values for a 6-stage trial with a maximum sample size of 1000
 #' # interim analysis begins at 500 patients accrued and continues every 100 patients after
 #' design <- getGSDesign(looks = seq(500, 1000, 100))
-#'
 
 getGSDesign <- function(info.rates=NULL, looks=NULL,  as.type="asOF"){
 
@@ -82,7 +81,6 @@ getGSDesign <- function(info.rates=NULL, looks=NULL,  as.type="asOF"){
 #' @examples
 #' # confidence bounds for a 6-stage trial with a maximum sample size of 1000
 #' bounds <- getConfidenceFromBounds(getGSDesign(looks=seq(500, 1000, 100)))
-#'
 
 getConfidenceFromBounds <- function(design){
   if (typeof(design)!="environment"){
@@ -139,7 +137,6 @@ getConfidenceFromBounds <- function(design){
 #'
 #' # to make adjustments for multiple arms
 #' bounds <- getBoundsFromConfidence(num.treat.arms = 3)
-#'
 getBoundsFromConfidence <- function(num.treat.arms=2,
                                     conf.lower=0.01,
                                     conf.upper=0.99,
@@ -188,6 +185,7 @@ getBoundsFromConfidence <- function(num.treat.arms=2,
 #' @param num.per.block Number from each arm per block, for blocked randomization to balance co-variates.
 #' Block size is 'sum(num.per.block)'. If a single number is provided, it will be assume to apply to each arm.
 #' @param final.visit The number of days after intervention when the response information becomes available.
+#' Default assumes immediate follow-up (0).
 #' @param as.type The type of alpha spending function to use in group sequential design.
 #'  Default is 'asOF', O'Brien-Fleming-type.
 #' @param alpha The alpha threshold to apply to each pairwise comparison to control in the final analysis.
@@ -195,24 +193,77 @@ getBoundsFromConfidence <- function(num.treat.arms=2,
 #' Default is 0.05, assuming a two-sided test.
 #' @param multiarm.mode For multiple treatment arms, describes how arms are evaluated at each stage:
 #' \itemize{
-#' \item{"CONFIDENCE-BASED"(default): Evaluate arms against confidence-based rules }
+#' \item{"CONFIDENCE-BASED"(default): Evaluate arms against confidence-based rules}
 #' \item{"DROP WORST": Drop the worst performing arm, and carry the remaining promising arms}
 #' \item{"SELECT BEST": Select the best performing arm to carry forward, drop the rest}
 #' \item{"ALL PROMISING": Carry forward all promising arms}
 #' \item{"MONITOR FUTILITY": Only monitor for futility}
 #' }
-#' @param lmb
-#' @param lmb.conf.thresh
-#' @param outcome.type
-#' @param estimator.type
-#' @param resprate
-#' @param ppm
-#' @param special
-#'
-#' @return
+#' @param lmb.threshold Defined threshold for meaningful benefit. The direction of benefit/lacks benefit
+#' depends on the data and outcome, and whether lower or higher is better. For ordinal data, lower is better and anything
+#' greater than lmb.threshold lacks meaningful benefit. In that case we use a `genodds` estimator and `lmb.threshold` should be
+#' below 1. For binary and continous data, higher is better and `lmb.threshold` should reflect that.
+#' If the treatment effect is a ratio, it will be later converted to the logarithmic scale for confidence analysis.
+#' @param lmb.conf.thresh Confidence threshold for futility. If confidence in lack of meaningful benefit (LMB)
+#' is greater than this for a given treatment arm, the arm may be dropped. Default is 0.9.
+#' @param outcome.type Type of primary outcome: "CONTINUOUS", "ORDINAL", or "BINARY".
+#' @param estimator.type Type of estimator for binary data: "odds ratio", "risk diff", "risk ratio". Default is odds ratio.
+#' For ordinal data, a generalised odds ratio 'genodds' is used. For continuous data, a difference of means is used.
+#' @param resprate The response rates for control and treatment. For binary and continuous data, expects a vector which one number for each arm.
+#' For ordinal data, expects a list of lists with the with list corresponding to control. If running perpetually,
+#' include all treatments here, including those that will not initially be in the trial.
+#' @param ppm Patients per month.While the maximum sample size for a non-perpetual trial is derived from 'looks',
+#' in a perpetually setting the trial will continue to go so long as there are new treatments to add, and patients are
+#' still accruing according to the length of ppm.
+#' @param special Any information wishing to pass to the tag that will be added to the results dataframe under the 'misc' column.
+#' @return A parameter list used to generate a trial.
 #' @export
 #'
 #' @examples
+#' # two-arm six-stage trial (PRESTO-REACH) with binary outcome measure
+#'
+#' parlist <- getparlist(
+#' looks=seq(500,1000,100),
+#' perpetual=FALSE,
+#' alloc.ratio=c(1,1),
+#' num.per.block=c(1,1),
+#' final.visit=0,
+#' as.type="asOF",
+#' multiarm.mode="CONFIDENCE-BASED",
+#' lmb.threshold=0.95,
+#' lmb.conf.thresh=0.9,
+#' outcome.type='BINARY',
+#' estimator.type='odds ratio',
+#' resprate=c(0.3,0.5),
+#' ppm=rep(15, 300))
+#'
+#' # two-arm three-stage trial with 16-point ordinal outcome
+#'
+#' resprate <- list(
+#' ctrl = rep(1/16, 16),
+#' trmt=c(
+#' 0.08119658, 0.07802130, 0.07502870,0.07220504, 0.06953783,0.06701574,
+#' 0.06462841, 0.06236641, 0.06022113,0.05818467, 0.05624978, 0.05440984,
+#' 0.05265872, 0.05099079,0.04940088, 0.04788419)
+#' )
+#'
+#' # create a list of input parameters
+#'
+#' inputs <- list(
+#'  lmb.threshold = 1.10,
+#'  as.type = 'asOF',
+#'  outcome.type = "ORDINAL",
+#'  multiarm.mode='CONFIDENCE-BASED',
+#'  num.per.block = c(1,1),
+#'  final.visit = 180,
+#'  ppm = rep(20, 300),
+#'  perpetual=FALSE,
+#'  resprate=resprate,
+#'  looks=c(500,1000,1500)
+#'  )
+#'  # pass parameters in through "inputs"
+#'  parlist <- do.call("getparlist", inputs)
+
 getparlist = function(looks=seq(500,1000,100),
                       nmax=NULL,
                       perpetual=FALSE,
@@ -222,34 +273,13 @@ getparlist = function(looks=seq(500,1000,100),
                       as.type="asOF",
                       alpha=0.05,
                       multiarm.mode="CONFIDENCE-BASED",
-                      lmb=0.10,
+                      lmb.threshold=0.10,
                       lmb.conf.thresh=0.9,
                       outcome.type='BINARY',
                       estimator.type='odds ratio',
                       resprate=c(0.3,0.5),
                       ppm=rep(15, 300),
                       special=NULL) {
-  # design parameters
-  # looks: a vector interim analysis according to data accrued; max(looks) is the maximum sample size for a treatment
-  # perpetual: whether or not the trial continutes beyond nmax to test more arms (can arms be added?)
-  # ppm: vector with number of patients per month. Length of vector is number of months.
-  # alloc.ratio: vector for allocation ratios, control is the first number
-  # num.per.block: for blocked randomisation to balance covariates
-  # outcome.type: Options are BINARY, CONTINUOUS, ORDINAL and TRIPLETS
-  # resprate: The response rate for control and then each treatment arm.
-  #           # for binary outcome a vector of probabilities is expected
-  # for continuous outcome, a vector of (mean, sd) is expected FOR EACH arm
-  # for ordinal outcome only taking interact rates
-  # can take win-loss-tie triplets for generating log-odd
-  # There can be more resprates than arms allocated. This mean arms are added once others are dropped.
-  # final visit: in days, the time for the response information to become available
-  #lmb: Define lack of meaningful benefit, relative to whatever your outcome metric is
-  # as.type: the type of alpha-spending function to use. for RPACT.
-  # multiarm.mode: for multiple treatment arms, how to evaluated at each stage
-  #                 options: "DROP WORST" "SELECT BEST" "ALL PROMISING" "MONITOR FUTILITY"
-  # Special = passs something special
-
-
   # check if looks are given as time rate
   if (max(looks) == 1){
     if (!is.null(nmax)){
@@ -273,7 +303,7 @@ getparlist = function(looks=seq(500,1000,100),
   }
   parlist$num.per.block = num.per.block
 
-  parlist$final.visit = final.visit # default assumes immediate follow-up
+  parlist$final.visit = final.visit
 
   if (!toupper(multiarm.mode) %in% c("ALL PROMISING", "SELECT BEST", "DROP WORST", "CONFIDENCE-BASED", "MONITOR FUTILITY")){
     print(paste0("Mulitarm mode option ", multiarm.mode, " not available. Changing to default (CONFIDENCE-BASED)"))
@@ -291,7 +321,6 @@ getparlist = function(looks=seq(500,1000,100),
     parlist$confidence.bounds.efficacy = NULL
     parlist$confidence.bounds.inferiority = NULL
   } else {
-
     # decision thresholds via rpact
     if (! as.type %in% c("OF", "P", "WT", "PT", "HP", "WToptimum", "asP", "asOF", "asKD",
                          "asHSD", "asUser", "noEarlyEfficacy")){
@@ -309,11 +338,11 @@ getparlist = function(looks=seq(500,1000,100),
   }
 
   # LMB // Lack of Meaningful Benefit
-  parlist$lmb.threshold = lmb
+  parlist$lmb.threshold = lmb.threshold
   parlist$lmb.confidence.threshold = lmb.conf.thresh
 
   # response rates and accrual
-  if (!toupper(outcome.type) %in% c("BINARY", "ORDINAL", "CONTINUOUS", "TRIPLETS")){
+  if (!toupper(outcome.type) %in% c("BINARY", "ORDINAL", "CONTINUOUS")){
     print(paste0("Outcome type ", outcome.type, " not in options."))
   }
   parlist$outcome.type = toupper(outcome.type)
@@ -350,20 +379,18 @@ getparlist = function(looks=seq(500,1000,100),
       if (outcome.type != "CONTINUOUS") {
         print("Outcome type changed to CONTINUOUS according to list of mean/std response rate")
         parlist$outcome.type = "CONTINUOUS"}
-    } else {
-      if(outcome.type != "ORDINAL"){
-        if (outcome.type != "TRIPLETS"){
-          print("Outcome type changed to ORDINAL according to list response rate")
-          parlist$outcome.type = "ORDINAL"}
-      }
     }
     parlist$resprate = resprate
   }
 
   # check binary has estimator type
   if (parlist$outcome.type == 'BINARY'){
-    if (grepl('risk', tolower(estimator.type)) | grepl('diff', tolower(estimator.type))){
-      parlist$estimator.type = 'risk diff'
+    if (grepl('risk', tolower(estimator.type))){
+      if (grepl('diff', tolower(estimator.type))){
+         parlist$estimator.type = 'risk diff'
+      } else if (grepl('ratio', tolower(estimator.type))|grepl('rel', tolower(estimator.type))){
+        parlist$estimator.type = 'risk ratio'
+      }
     } else {
       parlist$estimator.type = 'odds ratio'
     }
@@ -392,9 +419,25 @@ getparlist = function(looks=seq(500,1000,100),
 }
 
 
-# generate patient accrual with Poisson distribution
-# how many patients do we accrue to get the number of follow-ups?
-# is this trial running perpetually?
+
+#' Get Accrual
+#' @description
+#' Generate patient accrual with Poisson distribution.
+#'
+#' @param numsubjects Maximum sample size. If perpetual is TRUE, a new maximum sample size is returned.
+#' @param ppm Patients accrued per month, as an array. Length of array is the number of months in the trial.
+#' @param follow.up Follow-up period in months.
+#' @param cont.recruit Whether to continue recruitment while waiting for follow up (TRUE) of not (FALSE).
+#' @param perpetual Whether to run trial perpetually (TRUE) or not (FALSE).
+#'
+#' @return Vector size of number of patients you need to get 'numsubjects' followup with values representing month of accrual.
+#' @export
+#'
+#' @examples
+#' ppm <- rep(15, 300)
+#' monthin <- getAccrual(1000, ppm, 0)
+#' # monthin is of length 1000.
+
 getAccrual = function (numsubjects, ppm, follow.up=0,
                        cont.recruit=FALSE,
                        perpetual=FALSE){
@@ -432,13 +475,25 @@ getAccrual = function (numsubjects, ppm, follow.up=0,
       }
     }
   }
-  return(monthin) # get a vector size of number of patients you need to get numsubjects followup
+  return(monthin)
 }
 
-# function to randomize patients
-# Treatment 1: 1 to one block, one to another
-# each block gets an equal distribution of treatments to remove the effect
-# that is different between blocks.
+#' Get Blocked Arm
+#' @description
+#' Randomize patients to arms using blocked randomization.
+#' @details To balance covariates, each block gets an equal distribution of treatment arms to remove the effect
+#' that could come from the block characteristics (e.g. covariates). If not balancing covariates,
+#' patients will be randomized according to ratios.
+#'
+#' @param numsubjects Number of subjects to randomize.
+#' @param num.per.block Number from each arm per block. Block size is 'sum(num.per.block)'.
+#' @param prob Probability of randomization to each arm. Default assumes equal probability.
+#'
+#' @return Return vector of arm allocations.
+#' @export
+#'
+#' @examples
+#' arm <- getBlockedArm(500, c(1,1))
 getBlockedArm = function(numsubjects, num.per.block, prob=NULL){
 
   if (!is.numeric(numsubjects)){
@@ -459,7 +514,6 @@ getBlockedArm = function(numsubjects, num.per.block, prob=NULL){
     prob=rep(1, num.arms)
   }
   # if some arms probabilities are set to zero change block size and need
-  # TODO: size
   if (any(prob==0)){
     block.size =sum(num.per.block[prob>0])
   }
@@ -470,20 +524,44 @@ getBlockedArm = function(numsubjects, num.per.block, prob=NULL){
                 prob=rep.int(prob, num.per.block),
                 size=block.size)))[1:numsubjects]
 }
+
+
 ####################e
 # GENERATE OUTCOMES
 ###################
 
-# binary outcome expects a probability response rate for each arm
-# it should be supplied thus c(control rate, treatment1 rate,..., treatmentn rate)
-# 1 is generate at that specified rate.
+
+#' Generate binary data
+#' @description Given an arm allocation and response rates, this function generates a binary response.
+#' @param arm Arm allocation for a single patient.Expects number in *1,2,...,n* where *n* the number of treatment arms including control.
+#' @param resprate Response rates for each arm. Expects a vector of probabilities of length *n* with the first
+#' corresponding to response rate of the control arm.
+#'
+#' @return Returns a binary value corresponding to patient response.
+#' @export
+#'
+#' @examples
+#'
+#' response <- getDataBin(1, c(0.5, 0.7))
+#'
 getDataBin = function(arm, resprate){
   if (is.na(resprate[arm])){
     stop("No response rate for this treatment.")
   }
   rbinom(n=1, size=1, prob=resprate[arm])}
 
-# ordinal outcomes (e.g. mRS) expect a list of probabilities for each arm
+#' Generate ordinal data
+#' @description Given an arm allocation and response rates, this function generates response on an ordinal scale.
+#' @param arm Arm allocation for a single patient. Expects number in *1,2,...,n* where *n* is the number of treatment arms including control.
+#' @param resprate Response rates for each arm. Expects a list of *n* lists with the first list containing
+#' probabilities for response level which correspond to the control arm.
+#'
+#' @return Returns an ordinal value corresponding to patient response.
+#' @export
+#'
+#' @examples
+#' # for a three-point ordinal scale
+#' response <- getDataOrd(1, list(control = c(0.3, 0.5, 0.7), treatment = (c(0.5, 0.3, 0.2))))
 getDataOrd <- function(arm, resprate){
   if (is.na(resprate[arm])){
     stop("No response rate for this treatment.")
@@ -494,8 +572,20 @@ getDataOrd <- function(arm, resprate){
     prob = resprate[[arm]]))==1)
 }
 
-# continuous outcomes expect a mean and standard deviation for each arm
-# to generate values from a distribution (e.g., normal)
+
+#' Get Continuous Data
+#' @description Given an arm allocation and response rates, this function generates response from a given distribution.
+#' @param arm Arm allocation for a single patient. Expects number in *1,2,...,n* where *n* is the number of treatment arms including control.
+#' @param resprate Response rates for each arm. Expects a list of n lists with the first list containing
+#' median and standard deviation paramaterizing control response. Expects `c(mean, sd)` for each arm.
+#' @param dist Type of distribution. Default is normal (`norm`).
+#'
+#' @return Returns a continuous value corresponding to patient response.
+#' @export
+#'
+#' @examples
+#' response <- getDataCont(1, list(control = c(0,1), treatment = c(0.5,1)), dist='norm')
+
 getDataCont <- function(arm, resprate, dist='norm'){
   if (is.na(resprate[arm])){
     stop("No response rate for this treatment.")
@@ -510,8 +600,37 @@ getDataCont <- function(arm, resprate, dist='norm'){
 
 
 
-# function to data that is available at interim
-# Set as.followup = TRUE is you want n to be the amount of available follow-up
+#' Get Current Data
+#' @description Get the data available at the time of the current analysis.
+#' @param datlist The entire data list generated at the start of the simulation.
+#' @param looktime The time of the current analysis point.
+#' @param n The number of subjects corresponding to this analysis point (`n.at.look`).
+#' @param as.followup If TRUE, the true looktime is when all *n* patient reach follow-up. If FALSE, looktime remains
+#' the time when the *n*th patient is *enrolled*. Default is `TRUE`.
+#'
+#' @return Returns a subset of the data to use in interim analysis.
+#' @return \itemize{
+#'  \item{subjid}{Subject ID from 1 to maximum sample size}
+#'  \item{arm}{Treatment arm allocation for each subject}
+#'  \item{dat}{Response for each subject (0 or 1)}
+#'  \item{arrival.day}{Arrival time (days) for each subject throughout trial duration}
+#'  \item{obstime}{Obveration time (days) for each subject; when response is observed}
+#' }
+#' @export
+#'
+#' @examples
+#' # using included data set
+#' data(datlist)
+#' # This example uses the default parlist parameters
+#' looks <- seq(500,1000,100)
+#'
+#' # get the data available at the first interim analysis
+#' n.at.look <- looks[1]
+#' looktime.interim <- datlist$arrival.day[n.at.look]
+#' currdatlist.interim <- getCurrentData(datlist, looktime.interim, n.at.look, as.followup=TRUE)
+#' # currdatlist.interim will have a new field `KNOWN` which indicates if a patients response is known (TRUE) or not (FALSE)
+
+
 getCurrentData = function(datlist, looktime, n, as.followup=TRUE){
   n = suppressWarnings(as.numeric(n))
   if (is.na(n)){
@@ -545,7 +664,40 @@ getCurrentData = function(datlist, looktime, n, as.followup=TRUE){
   return(c(newdatlist, looktime=looktime))
 }
 
-## Get sufficient statistics
+#' Get Sufficient Statistics
+#' @description
+#' Get sufficient statistics from trial data necessary to perform primary analysis
+#'
+#' @details Given a data list, this checks if the responses are binary (two types of responses),
+#' ordinal (more than 2 or less than 30 different response types) or continuous (other). If continuous, mean and standard
+#' deviations are returned. This code is not necessarily used in singleTrial since the perpetual functionality was
+#' introduced as there are additional methods to retrieve the statistics necessary to perform the analysis that take
+#' into account the possibility that arms have been dropped or added.
+#'
+#' @param datlist The current data list at the point of analysis generated from `getCurrentData`.
+#' The list must have a `KNOWN` field.
+#'
+#' @return List of sufficient statistics
+#' @return
+#' \itemize{
+#' \item{num.enrolled}
+#' \item{num.known}
+#' \item{num.uknown}
+#' \item{num.resp}
+#' \item{num.fail}
+#' \item{resprate}
+#' \item{formattedrate}}
+#' @export
+#'
+#' @examples
+#' # load data set
+#' data(datlist)
+#' looks <- seq(500,1000,100)
+#' # first interim analysis
+#' n.at.look = looks[1]
+#' looktime.interim = datlist$arrival.day[n.at.look]
+#' currdatlist.interim <- getCurrentData(datlist, looktime.interim, n.at.look, as.followup=TRUE)
+#' suffStats  <- getSuffStats(currdatlist.interim)
 getSuffStats = function(datlist) {
   num.enrolled = table(datlist$arm)
   num.known = with(datlist, tapply(datlist$known, datlist$arm, sum))
@@ -585,7 +737,6 @@ getSuffStats = function(datlist) {
       resprate = resprate)
     formattedrate = lapply(1:length(resprate), function(x){sapply(resprate[[x]]*100, round,0)})
     names(formattedrate) = cols
-    # TODO: format the following for print
     suffstats$formattedrate = formattedrate
 
   }else {
