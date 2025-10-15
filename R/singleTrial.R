@@ -6,7 +6,7 @@
 #' At each analysis point, the confidence in treatment benefit and futility is evaluation and arms may be dropped or continued based on the trial settings.
 #' The trial may also be run perpetually, with new treatment arms being added once arms are dropped, as an adaptive platform trial.
 #' The confidence-based thresholds are derived using alpha spending function, or specified with a fixed alpha.
-#'
+#' @seealso [confidenceCurves::makeConfidenceCurves()]
 #' @param sim.no Simulation number, when running mutiple simulations of a trial.
 #' @param inputs A list of items fed to the function which parameterize the trial to be simulated.
 #' The list of input options can be found in the documentation to the getparlist function.
