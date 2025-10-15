@@ -19,20 +19,20 @@ runSingleTrial(
 \item{sim.no}{Simulation number, when running mutiple simulations of a trial.}
 
 \item{inputs}{A list of items fed to the function which parameterize the trial to be simulated.
-The list of input options can be found in the documentation to the getparlist function.}
+An example parameter list can be loaded using \code{data(inputs)}.}
 
 \item{save.plot}{Whether or not to save confidence curve plot with the result.TRUE (yes) or FALSE (no).
-When running multiple simulations, FALSE is recommended. If TRUE, files will be saved to the specified directory.
+When running multiple simulations, \code{FALSE} is recommended. If \code{TRUE}, files will be saved to the specified directory.
 The filename is automatically generated according to trial settings. Default is FALSE. Passed to makeConfidenceCurves function.}
 
-\item{save.text}{Whether or not to save results to directory. Default is TRUE.
-"MB" (meaningful benefit) or "EQUIV" (equivalence). Passed to makeConfidenceCurves function.}
+\item{save.text}{Whether or not to save results to directory. Default is TRUE.}
 
-\item{show}{If saving confidence curves, what to show on the confidence density plot. Options are "BENEFIT" (default), "LMB" (lack of meaningful benefit),}
+\item{show}{If saving confidence curves, what to show on the confidence density plot. Options are "BENEFIT" (default), "LMB" (lack of meaningful benefit),
+"MB" (meaningful benefit) or "EQUIV" (equivalence). Passed to \code{makeConfidenceCurves}.}
 
 \item{directory}{Working directory. Used to save Random State, and trial results. A subdirectory is created based on the current node
-to allow for parallel computing across multiple nodes. Random State is checkpointed throughout the code and saved in the subdirectory 'directory/\if{html}{\out{<node>}}/'.
-Results are saved in the same places as the Random States.}
+to allow for parallel computing across multiple nodes. Random State is checkpointed throughout the code and saved in the subdirectory 'directory/node/'.
+Results are saved in the same places as the Random States. If \code{save.text == FALSE} nothing is saved to \code{directory}.}
 
 \item{reproduce}{To reproduce a result from saved Random States. If setting as TRUE, make sure the directory parameter points to the location (the node subdirectory)
 where the Random States are saved. The results will be saved to this directory. If set as FALSE (default), results and Random States are saved to the node subdirectory.}
@@ -46,23 +46,23 @@ The number of lines is number experimental treatments * number of stages. E.g. A
 
 Attributes in output object:
 \itemize{
-\item{"sim.no: "}{simulation number}
-\item{"arm": }{arm number starting from 2 as 1 is control}
-\item{"interim.arm": }{stage number of this arm (will differ from interim.total if arm was added later)}
-\item{"interim.total": }{interim number for trial}
-\item{"mean": }{point estimate}
-\item{"standard.error": }{standard error associated with point estimate}
-\item{"resp.ctrl": }{for binary data, resulting control response rate}
-\item{"resp.trmt": }{for binary data, resulting treatment response rate}
-\item{"conf.benefit": }{confidence in treatment benefit}
-\item{"conf.lack.meaningful.benefit": }{confidence in lack of meaningful benefit}
-\item{"action": }{Decision taken at this analysis point e.g. stop early, continue}
-\item{"N.looks": }{Number of looks (analysis points) in this trial design}
-\item{"misc": }{Information passed into getparlist function by the 'special' parameter. Can be anything of interest}
-\item{"N.arm": }{Number recruited to this treatment arm}
-\item{"N.pair": }{Number of patients in this two-arm (pairwise) analysis against control}
-\item{"N.known": }{Number of patients with a known outcome (prespecified in trial settings)}
-\item{"N": }{Total number of patients recruited so far. Will be different from N.known if there is a follow-up period.}
+\item{sim.no: simulation number}
+\item{arm: arm number starting from 2 as 1 is control}
+\item{interim.arm: stage number of this arm (will differ from interim.total if arm was added later)}
+\item{interim.total: interim number for trial}
+\item{mean: point estimate}
+\item{standard.error: standard error associated with point estimate}
+\item{resp.ctrl: for binary data, resulting control response rate}
+\item{resp.trmt: for binary data, resulting treatment response rate}
+\item{conf.benefit: confidence in treatment benefit}
+\item{conf.lack.meaningful.benefit: confidence in lack of meaningful benefit}
+\item{action: Decision taken at this analysis point e.g. stop early, continue}
+\item{N.looks: Number of looks (analysis points) in this trial design}
+\item{misc: Information passed into getparlist function by the 'special' parameter. Can be anything of interest}
+\item{N.arm: Number recruited to this treatment arm}
+\item{N.pair: Number of patients in this two-arm (pairwise) analysis against control}
+\item{N.known: Number of patients with a known outcome (prespecified in trial settings)}
+\item{N: Total number of patients recruited so far. Will be different from N.known if there is a follow-up period.}
 }
 }
 \description{

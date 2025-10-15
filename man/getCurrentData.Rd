@@ -20,11 +20,10 @@ the time when the \emph{n}th patient is \emph{enrolled}. Default is \code{TRUE}.
 Returns a subset of the data to use in interim analysis.
 
 \itemize{
-\item{subjid}{Subject ID from 1 to maximum sample size}
-\item{arm}{Treatment arm allocation for each subject}
-\item{dat}{Response for each subject (0 or 1)}
-\item{arrival.day}{Arrival time (days) for each subject throughout trial duration}
-\item{obstime}{Obveration time (days) for each subject; when response is observed}
+\item{subjid: Subject ID from 1 to maximum sample size}
+\item{arm: Treatment arm allocation for each subject}
+\item{dat: Response for each subject (0 or 1)}
+\item{arrival.day: Arrival time (days) for each subject throughout trial duration}
 }
 }
 \description{

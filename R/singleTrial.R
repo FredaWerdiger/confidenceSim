@@ -9,16 +9,16 @@
 #' @seealso [confidenceCurves::makeConfidenceCurves()]
 #' @param sim.no Simulation number, when running mutiple simulations of a trial.
 #' @param inputs A list of items fed to the function which parameterize the trial to be simulated.
-#' The list of input options can be found in the documentation to the getparlist function.
+#' An example parameter list can be loaded using `data(inputs)`.
 #' @param save.plot Whether or not to save confidence curve plot with the result.TRUE (yes) or FALSE (no).
-#'  When running multiple simulations, FALSE is recommended. If TRUE, files will be saved to the specified directory.
+#'  When running multiple simulations, `FALSE` is recommended. If `TRUE`, files will be saved to the specified directory.
 #'  The filename is automatically generated according to trial settings. Default is FALSE. Passed to makeConfidenceCurves function.
 #' @param show If saving confidence curves, what to show on the confidence density plot. Options are "BENEFIT" (default), "LMB" (lack of meaningful benefit),
+#' "MB" (meaningful benefit) or "EQUIV" (equivalence). Passed to `makeConfidenceCurves`.
 #' @param save.text Whether or not to save results to directory. Default is TRUE.
-#' "MB" (meaningful benefit) or "EQUIV" (equivalence). Passed to makeConfidenceCurves function.
 #' @param directory Working directory. Used to save Random State, and trial results. A subdirectory is created based on the current node
-#' to allow for parallel computing across multiple nodes. Random State is checkpointed throughout the code and saved in the subdirectory 'directory/<node>/'.
-#' Results are saved in the same places as the Random States.
+#' to allow for parallel computing across multiple nodes. Random State is checkpointed throughout the code and saved in the subdirectory 'directory/node/'.
+#' Results are saved in the same places as the Random States. If `save.text == FALSE` nothing is saved to `directory`.
 #' @param reproduce To reproduce a result from saved Random States. If setting as TRUE, make sure the directory parameter points to the location (the node subdirectory)
 #' where the Random States are saved. The results will be saved to this directory. If set as FALSE (default), results and Random States are saved to the node subdirectory.
 #' @param print Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
@@ -27,26 +27,27 @@
 #' The number of lines is number experimental treatments * number of stages. E.g. A two-arm-two-stage trial returns a two-line object.
 #' @return Attributes in output object:
 #' \itemize{
-#' \item{"sim.no: "}{simulation number}
-#' \item{"arm": }{arm number starting from 2 as 1 is control}
-#' \item{"interim.arm": }{stage number of this arm (will differ from interim.total if arm was added later)}
-#' \item{"interim.total": }{interim number for trial}
-#' \item{"mean": }{point estimate}
-#' \item{"standard.error": }{standard error associated with point estimate}
-#' \item{"resp.ctrl": }{for binary data, resulting control response rate}
-#' \item{"resp.trmt": }{for binary data, resulting treatment response rate}
-#' \item{"conf.benefit": }{confidence in treatment benefit}
-#' \item{"conf.lack.meaningful.benefit": }{confidence in lack of meaningful benefit}
-#' \item{"action": }{Decision taken at this analysis point e.g. stop early, continue}
-#' \item{"N.looks": }{Number of looks (analysis points) in this trial design}
-#' \item{"misc": }{Information passed into getparlist function by the 'special' parameter. Can be anything of interest}
-#' \item{"N.arm": }{Number recruited to this treatment arm}
-#' \item{"N.pair": }{Number of patients in this two-arm (pairwise) analysis against control}
-#' \item{"N.known": }{Number of patients with a known outcome (prespecified in trial settings)}
-#' \item{"N": }{Total number of patients recruited so far. Will be different from N.known if there is a follow-up period.}
+#' \item{sim.no: simulation number}
+#' \item{arm: arm number starting from 2 as 1 is control}
+#' \item{interim.arm: stage number of this arm (will differ from interim.total if arm was added later)}
+#' \item{interim.total: interim number for trial}
+#' \item{mean: point estimate}
+#' \item{standard.error: standard error associated with point estimate}
+#' \item{resp.ctrl: for binary data, resulting control response rate}
+#' \item{resp.trmt: for binary data, resulting treatment response rate}
+#' \item{conf.benefit: confidence in treatment benefit}
+#' \item{conf.lack.meaningful.benefit: confidence in lack of meaningful benefit}
+#' \item{action: Decision taken at this analysis point e.g. stop early, continue}
+#' \item{N.looks: Number of looks (analysis points) in this trial design}
+#' \item{misc: Information passed into getparlist function by the 'special' parameter. Can be anything of interest}
+#' \item{N.arm: Number recruited to this treatment arm}
+#' \item{N.pair: Number of patients in this two-arm (pairwise) analysis against control}
+#' \item{N.known: Number of patients with a known outcome (prespecified in trial settings)}
+#' \item{N: Total number of patients recruited so far. Will be different from N.known if there is a follow-up period.}
 #' }
 #'
 #' @export
+#' @importFrom utils read.csv write.csv tail
 #' @examples
 #' # Example of input list to generate a two-arm-two-stage trial with binary outcome data
 #'

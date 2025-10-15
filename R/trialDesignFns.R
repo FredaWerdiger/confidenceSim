@@ -46,7 +46,7 @@ getGSDesign <- function(info.rates=NULL, looks=NULL,  as.type="asOF"){
   }
   if (! as.type %in% c("OF", "P", "WT", "PT", "HP", "WToptimum", "asP", "asOF", "asKD",
                        "asHSD", "asUser", "noEarlyEfficacy")){
-    print(pastt0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
+    print(paste0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
     as.type = "asOF"
   }
   # using a one-sided test for confidence threshold
@@ -69,11 +69,11 @@ getGSDesign <- function(info.rates=NULL, looks=NULL,  as.type="asOF"){
 #'
 #' @return List of values:
 #' \itemize{
-#' \item{critical.values}{Critical z-levels at each stage}
-#' \item{alpha.spending.one.sided}{One-sided alpha critical values for each stage}
-#' \item{alpha.spending.cumulative}{One-sided alpha accumulated by each stage}
-#' \item{confidence.threshold.efficacy}{Upper bounds for confidence i.e. declare efficacy if exceeded}
-#' \item{confidence.threshold.inferiority}{Lower bounds for confidence i.e. declare inferiority if below}
+#' \item{critical.values: Critical z-levels at each stage}
+#' \item{alpha.spending.one.sided: One-sided alpha critical values for each stage}
+#' \item{alpha.spending.cumulative: One-sided alpha accumulated by each stage}
+#' \item{confidence.threshold.efficacy: Upper bounds for confidence i.e. declare efficacy if exceeded}
+#' \item{confidence.threshold.inferiority: Lower bounds for confidence i.e. declare inferiority if below}
 #' }
 #'
 #' @export
@@ -130,6 +130,7 @@ getConfidenceFromBounds <- function(design){
 #' }
 #'
 #' @export
+#' @importFrom stats qnorm
 #'
 #' @examples
 #' # Running the function on default values
@@ -324,7 +325,7 @@ getparlist = function(looks=seq(500,1000,100),
     # decision thresholds via rpact
     if (! as.type %in% c("OF", "P", "WT", "PT", "HP", "WToptimum", "asP", "asOF", "asKD",
                          "asHSD", "asUser", "noEarlyEfficacy")){
-      print(pastt0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
+      print(paste0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
       as.type = "asOF"
     }
 
@@ -419,7 +420,7 @@ getparlist = function(looks=seq(500,1000,100),
 #'
 #' @return Vector size of number of patients you need to get 'numsubjects' followup with values representing month of accrual.
 #' @export
-#'
+#' @importFrom stats rexp
 #' @examples
 #' ppm <- rep(15, 300)
 #' monthin <- getAccrual(1000, ppm, 0)
@@ -526,7 +527,7 @@ getBlockedArm = function(numsubjects, num.per.block, prob=NULL){
 #'
 #' @return Returns a binary value corresponding to patient response.
 #' @export
-#'
+#' @importFrom stats rbinom
 #' @examples
 #'
 #' response <- getDataBin(1, c(0.5, 0.7))
@@ -544,7 +545,10 @@ getDataBin = function(arm, resprate){
 #' probabilities for response level which correspond to the control arm.
 #'
 #' @return Returns an ordinal value corresponding to patient response.
+#'
 #' @export
+#'
+#' @importFrom stats rmultinom
 #'
 #' @examples
 #' # for a three-point ordinal scale
@@ -569,6 +573,8 @@ getDataOrd <- function(arm, resprate){
 #'
 #' @return Returns a continuous value corresponding to patient response.
 #' @export
+#'
+#' @importFrom stats rnorm
 #'
 #' @examples
 #' response <- getDataCont(1, list(control = c(0,1), treatment = c(0.5,1)), dist='norm')
@@ -597,11 +603,10 @@ getDataCont <- function(arm, resprate, dist='norm'){
 #'
 #' @return Returns a subset of the data to use in interim analysis.
 #' @return \itemize{
-#'  \item{subjid}{Subject ID from 1 to maximum sample size}
-#'  \item{arm}{Treatment arm allocation for each subject}
-#'  \item{dat}{Response for each subject (0 or 1)}
-#'  \item{arrival.day}{Arrival time (days) for each subject throughout trial duration}
-#'  \item{obstime}{Obveration time (days) for each subject; when response is observed}
+#'  \item{subjid: Subject ID from 1 to maximum sample size}
+#'  \item{arm: Treatment arm allocation for each subject}
+#'  \item{dat: Response for each subject (0 or 1)}
+#'  \item{arrival.day: Arrival time (days) for each subject throughout trial duration}
 #' }
 #' @export
 #'
@@ -676,6 +681,8 @@ getCurrentData = function(datlist, looktime, n, as.followup=TRUE){
 #' \item{resprate}
 #' \item{formattedrate}}
 #' @export
+
+#' @importFrom stats sd
 #'
 #' @examples
 #' # load data set

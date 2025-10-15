@@ -12,11 +12,11 @@ getConfidenceFromBounds(design)
 \value{
 List of values:
 \itemize{
-\item{critical.values}{Critical z-levels at each stage}
-\item{alpha.spending.one.sided}{One-sided alpha critical values for each stage}
-\item{alpha.spending.cumulative}{One-sided alpha accumulated by each stage}
-\item{confidence.threshold.efficacy}{Upper bounds for confidence i.e. declare efficacy if exceeded}
-\item{confidence.threshold.inferiority}{Lower bounds for confidence i.e. declare inferiority if below}
+\item{critical.values: Critical z-levels at each stage}
+\item{alpha.spending.one.sided: One-sided alpha critical values for each stage}
+\item{alpha.spending.cumulative: One-sided alpha accumulated by each stage}
+\item{confidence.threshold.efficacy: Upper bounds for confidence i.e. declare efficacy if exceeded}
+\item{confidence.threshold.inferiority: Lower bounds for confidence i.e. declare inferiority if below}
 }
 }
 \description{
