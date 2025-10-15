@@ -8,6 +8,7 @@ runSingleTrial(
   sim.no = 0,
   inputs = NULL,
   save.plot = FALSE,
+  save.text = TRUE,
   show = "BENEFIT",
   directory = "",
   reproduce = FALSE,
@@ -24,8 +25,10 @@ The list of input options can be found in the documentation to the getparlist fu
 When running multiple simulations, FALSE is recommended. If TRUE, files will be saved to the specified directory.
 The filename is automatically generated according to trial settings. Default is FALSE. Passed to makeConfidenceCurves function.}
 
-\item{show}{If saving confidence curves, what to show on the confidence density plot. Options are "BENEFIT" (default), "LMB" (lack of meaningful benefit),
+\item{save.text}{Whether or not to save results to directory. Default is TRUE.
 "MB" (meaningful benefit) or "EQUIV" (equivalence). Passed to makeConfidenceCurves function.}
+
+\item{show}{If saving confidence curves, what to show on the confidence density plot. Options are "BENEFIT" (default), "LMB" (lack of meaningful benefit),}
 
 \item{directory}{Working directory. Used to save Random State, and trial results. A subdirectory is created based on the current node
 to allow for parallel computing across multiple nodes. Random State is checkpointed throughout the code and saved in the subdirectory 'directory/\if{html}{\out{<node>}}/'.
@@ -34,7 +37,7 @@ Results are saved in the same places as the Random States.}
 \item{reproduce}{To reproduce a result from saved Random States. If setting as TRUE, make sure the directory parameter points to the location (the node subdirectory)
 where the Random States are saved. The results will be saved to this directory. If set as FALSE (default), results and Random States are saved to the node subdirectory.}
 
-\item{print.}{Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
+\item{print}{Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
 Not recommended if running a high number of simulation.}
 }
 \value{

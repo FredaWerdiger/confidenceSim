@@ -360,19 +360,6 @@ getparlist = function(looks=seq(500,1000,100),
       print("Outcome type changed to BINARY according to numeric response rate")
       parlist$outcome.type = "BINARY"
     }
-  } else if (is.character(resprate)){
-    # built in interact response rates
-    if(outcome.type != "ORDINAL"){
-      print("Outcome type changed to ORDINAL according to string response rate")
-      parlist$outcome.type = "ORDINAL"
-    }
-    if (resprate == 'interact'){
-      parlist$resprate = strokeTrials::getInteractResprate()
-    } else if (resprate == 'interact.rev'){
-      parlist$resprate = strokeTrials::getOppositeResprate()
-    } else if (resprate == 'interact.same'){
-      parlist$resprate = strokeTrials::getSameResprate()
-    }
   } else if (is.list(resprate)){
     # check if each has two items (mean and std)
     if (length(resprate[1])==2){
@@ -628,7 +615,8 @@ getDataCont <- function(arm, resprate, dist='norm'){
 #' n.at.look <- looks[1]
 #' looktime.interim <- datlist$arrival.day[n.at.look]
 #' currdatlist.interim <- getCurrentData(datlist, looktime.interim, n.at.look, as.followup=TRUE)
-#' # currdatlist.interim will have a new field `KNOWN` which indicates if a patients response is known (TRUE) or not (FALSE)
+#' # currdatlist.interim will have a new field `KNOWN`
+#' #3 which indicates if a patients response is known (TRUE) or not (FALSE)
 
 
 getCurrentData = function(datlist, looktime, n, as.followup=TRUE){

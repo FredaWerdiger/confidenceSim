@@ -40,5 +40,6 @@ looks <- seq(500,1000,100)
 n.at.look <- looks[1]
 looktime.interim <- datlist$arrival.day[n.at.look]
 currdatlist.interim <- getCurrentData(datlist, looktime.interim, n.at.look, as.followup=TRUE)
-# currdatlist.interim will have a new field `KNOWN` which indicates if a patients response is known (TRUE) or not (FALSE)
+# currdatlist.interim will have a new field `KNOWN`
+#3 which indicates if a patients response is known (TRUE) or not (FALSE)
 }

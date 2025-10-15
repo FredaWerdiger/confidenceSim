@@ -26,15 +26,27 @@
 #' # Example of input list to generate a two-arm-two-stage trial with binary outcome data
 #' # Run 4 simulations with lapply without parallelization
 #' num.sims <- 4
-#' conf <- lapply(1:num.sims, runSingleTrial, inputs=inputs,  save.plot=FALSE, print=FALSE, directory = '')
+#' conf <- lapply(
+#' 1:num.sims,
+#' runSingleTrial,
+#' inputs=inputs,
+#' save.plot=FALSE,
+#' print=FALSE,
+#' directory = '')
 #' # Now run in parallel across two nodes
 #' clusters <- 2
 #' cl <- makeCluster(clusters)
 #' directory <- tempdir()
-#' res.list <- pblapply(1:num.sims, runSingleTrial, inputs=inputs, save.plot=FALSE, directory=directory, cl=cl)
+#' res.list <- pblapply(
+#' 1:num.sims,
+#' runSingleTrial,
+#' inputs=inputs,
+#' save.plot=FALSE,
+#' directory=directory,
+#' cl=cl)
 #' stopCluster(cl)
 #' # now collect the results from the two nodes
-#' collectNodes(clusters, directory)
+#' res.list <- collectNodes(clusters, directory)
 #' res.list <- do.call("rbind", res.list)
 #' res.list <- data.frame(res.list)
 #' # now your results are in one list
@@ -48,13 +60,13 @@ collectNodes <- function(clusters, directory){
   numfiles = suppressWarnings(lapply(basenames, as.numeric))
   use.dirs = 1 - is.na(numfiles)
   # mask list of directories
-  dirs = dirs[use.dirs]
+  dirs = dirs[which(!is.na(numfiles))]
   # get the time stamp
   times=lapply(dirs,function(x){
     info = file.info(x)
     t.str = strptime(info$ctime, "%Y-%m-%d %H:%M:%S")
-    floor(as.numeric(format(t.str, "%H")) +
-            as.numeric(format(t.str, "%M"))/60)
+    round(as.numeric(format(t.str, "%H")) +
+            as.numeric(format(t.str, "%M"))/60, 2)
   } )
   # find which ones were created at the same time, in the cluster
   dirs = dirs[which(times == unique(times)[unlist(lapply(unique(times), function(x) {

@@ -14,13 +14,14 @@
 #'  When running multiple simulations, FALSE is recommended. If TRUE, files will be saved to the specified directory.
 #'  The filename is automatically generated according to trial settings. Default is FALSE. Passed to makeConfidenceCurves function.
 #' @param show If saving confidence curves, what to show on the confidence density plot. Options are "BENEFIT" (default), "LMB" (lack of meaningful benefit),
+#' @param save.text Whether or not to save results to directory. Default is TRUE.
 #' "MB" (meaningful benefit) or "EQUIV" (equivalence). Passed to makeConfidenceCurves function.
 #' @param directory Working directory. Used to save Random State, and trial results. A subdirectory is created based on the current node
 #' to allow for parallel computing across multiple nodes. Random State is checkpointed throughout the code and saved in the subdirectory 'directory/<node>/'.
 #' Results are saved in the same places as the Random States.
 #' @param reproduce To reproduce a result from saved Random States. If setting as TRUE, make sure the directory parameter points to the location (the node subdirectory)
 #' where the Random States are saved. The results will be saved to this directory. If set as FALSE (default), results and Random States are saved to the node subdirectory.
-#' @param print. Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
+#' @param print Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
 #' Not recommended if running a high number of simulation.
 #' @return Object where each line is the result of confidence analysis for a given arm, at a given stage.
 #' The number of lines is number experimental treatments * number of stages. E.g. A two-arm-two-stage trial returns a two-line object.
@@ -79,6 +80,7 @@ runSingleTrial <- function(
     sim.no=0,
     inputs=NULL,
     save.plot=FALSE,
+    save.text=TRUE,
     show="BENEFIT",
     directory="",
     reproduce=FALSE,
@@ -92,7 +94,9 @@ runSingleTrial <- function(
     # make for this node
     subdirectory = paste0(directory, Sys.getpid(), "/")
     # create it
-    dir.create(file.path(subdirectory), showWarnings = FALSE, recursive = TRUE)
+    if (save.text){
+      dir.create(file.path(subdirectory), showWarnings = FALSE, recursive = TRUE)
+    }
   }
 
   # get the parameter list from "inputs"
@@ -116,7 +120,9 @@ runSingleTrial <- function(
       set.seed(613)
     }
     # save state
-    save(".Random.seed",file=paste0(subdirectory, "random_state_accrual.RData"))
+    if (save.text){
+      save(".Random.seed",file=paste0(subdirectory, "random_state_accrual.RData"))
+    }
   }
 
   # get time of patient arrival, in terms of months since trial commence
@@ -145,7 +151,9 @@ runSingleTrial <- function(
   if (reproduce){
     load(paste0(directory, "random_state_allocation.RData"))
   } else {
-    save(".Random.seed",file=paste0(subdirectory, "random_state_allocation.RData"))
+    if (save.text){
+      save(".Random.seed",file=paste0(subdirectory, "random_state_allocation.RData"))
+    }
   }
 
   # allocate patients to treatment arm
@@ -178,7 +186,9 @@ runSingleTrial <- function(
   if (reproduce){
     load(paste0(directory, "random_state_outcome.RData"))
   } else {
-    save(".Random.seed",file=paste0(subdirectory, "random_state_outcome.RData"))
+    if (save.text){
+      save(".Random.seed",file=paste0(subdirectory, "random_state_outcome.RData"))
+    }
   }
 
   # (binary/ordinal/continuous)
@@ -966,61 +976,24 @@ runSingleTrial <- function(
 
   # save the output into a csv
   filename = paste0(parlist$outfilename, "-conf-output-line-by-line.csv")
-  if (! is.null(directory)){
-    if ((! endsWith(directory, "/")) & (! endsWith(directory, "\\"))){
-      directory = paste0(directory, "/")
-    }
-    # if we are running N simulations
-    if (
-      (sim.no > 1) &
-      (file.exists(paste0(directory, filename)))
-    ){
-      old.conf = read.csv(paste0(directory, filename))
-      write.csv(rbind(old.conf, conf.all), paste0(directory, filename), row.names = F)
-    } else{
-      write.csv(conf.all, paste0(directory, filename), row.names = F)
+  if (save.text){
+    if (! is.null(directory)){
+      if ((! endsWith(directory, "/")) & (! endsWith(directory, "\\"))){
+        directory = paste0(directory, "/")
+      }
+      # if we are running N simulations
+      if (
+        (sim.no > 1) &
+        (file.exists(paste0(directory, filename)))
+      ){
+        old.conf = read.csv(paste0(directory, filename))
+        write.csv(rbind(old.conf, conf.all), paste0(directory, filename), row.names = F)
+      } else{
+        write.csv(conf.all, paste0(directory, filename), row.names = F)
+      }
     }
   }
   return(conf.all)
 }
 
 
-# #######
-# # TEST
-# #######
-#
-#
-# testTrial <- function(directory = "./test"){
-#
-#   #  TWO ARM 3-STAGE 16-POINT ORDINAL OUTCOME
-#
-#   resprate = list(ctrl = rep(1/16, 16), trmt=c(
-#     0.08119658, 0.07802130,
-#     0.07502870,0.07220504,
-#     0.06953783,0.06701574,
-#     0.06462841, 0.06236641,
-#     0.06022113,0.05818467,
-#     0.05624978, 0.05440984,
-#     0.05265872, 0.05099079,
-#     0.04940088, 0.04788419))
-#
-#   inputs <- list(
-#     lmb = 1.10,
-#     as.type = 'asOF',
-#     outcome.type = "ORDINAL",
-#     multiarm.mode='CONFIDENCE-BASED',
-#     alloc.ratio = c(1,1),
-#     num.per.block = c(1,1),
-#     final.visit = 180,
-#     ppm = rep(20, 300),
-#     perpetual=FALSE,
-#     resprate=resprate,
-#     looks=c(500,1000,1500)
-#   )
-#
-#   print("INPUT VECTOR:")
-#   print(inputs)
-#   conf=runSingleTrial(inputs=inputs, plot=FALSE, show='BENEFIT', directory = '/Users/fwerdiger/Documents/MBC/confidence_trials/diabetes/simulation_studies/', print=TRUE)
-#
-#   return(conf)
-# }

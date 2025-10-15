@@ -35,15 +35,27 @@ data(inputs)
 # Example of input list to generate a two-arm-two-stage trial with binary outcome data
 # Run 4 simulations with lapply without parallelization
 num.sims <- 4
-conf <- lapply(1:num.sims, runSingleTrial, inputs=inputs,  save.plot=FALSE, print=FALSE, directory = '')
+conf <- lapply(
+1:num.sims,
+runSingleTrial,
+inputs=inputs,
+save.plot=FALSE,
+print=FALSE,
+directory = '')
 # Now run in parallel across two nodes
 clusters <- 2
 cl <- makeCluster(clusters)
 directory <- tempdir()
-res.list <- pblapply(1:num.sims, runSingleTrial, inputs=inputs, save.plot=FALSE, directory=directory, cl=cl)
+res.list <- pblapply(
+1:num.sims,
+runSingleTrial,
+inputs=inputs,
+save.plot=FALSE,
+directory=directory,
+cl=cl)
 stopCluster(cl)
 # now collect the results from the two nodes
-collectNodes(clusters, directory)
+res.list <- collectNodes(clusters, directory)
 res.list <- do.call("rbind", res.list)
 res.list <- data.frame(res.list)
 # now your results are in one list
