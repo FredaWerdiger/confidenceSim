@@ -2,7 +2,7 @@
 
 Simulate one or many frequentist confidence clinical trials based on a specified set of parameters.  From a two-arm, single-stage trial to a perpetually run Adaptive Platform Trial, this package offers vast flexibility to customize your trial and observe operational characterisitics over thousands of instances.
 
-The analysis of trial results is carried out using the `confidenceCurves` package and all details about frequentist confidence analyis may be found there.
+The analysis of trial results is carried out using the `confidenceCurves` package (on [CRAN](https://cran.r-project.org/package=confidenceCurves) and [GitHub](https://github.com/FredaWerdiger/confidenceCurves)) and all details about frequentist confidence analysis may be found there.
 
 ## Trial Designs
 The complexity of the design of the trial being simulated varies from a two-arm one-stage trial, to a Multi-Arm Multi-Stage (**MAMS**) Trial through to an **Adaptive Platform Trial**. The trial design features are specified by a parameter list that is fed into the `runSingleTrial` function via the `inputs` field. There is an example parameter list named ```inputs``` which may be loaded by using:
@@ -12,7 +12,7 @@ data(inputs)
 Some examples of designs are as follows:
 
 ### Standard Randomised Control Trial (RCT)
-With `confidenceSim` you may design a randomised trial comparing a single experimental treatment to control with a single analysis point which is the primary analysis. Primary analysis of treatment efficacy is based on confidence in treatment benefit.
+With `confidenceSim` you may design a randomised trial comparing a single experimental treatment to control with a single analysis point which is the primary analysis. Primary analysis of treatment efficacy is based on confidence in treatment benefit. To design a single-stage trial, the `looks` fields would be a single number, respresenting the maximum sample size. The length of `looks` represents the number of stages. 
 
 ### Group sequential trial
 A group sequential trial involves multiple interim analysis with options to stop early for efficacy, harm or futility. With `confidenceSim`, decisions to stop early are made on the basis of confidence analysis. To control for Type I error, thresholds are derived with the `getGSdesign` function using an alpha-spending function. However, there are numerous options for trial monitoring. For example, by setting `multiarm.mode = 'MONITOR FUTILITY'` the trial will only be stopped early for futility, and a test for efficacy only undertaken in the final, primary, analysis. In that case a fixed `alpha=0.05` may be set. Otherwise `multiarm.mode = 'CONFIDENCE-BASED'` uses confidence monitoring for futility, efficacy and inferiority (harm). 
