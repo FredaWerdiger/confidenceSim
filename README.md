@@ -1,6 +1,8 @@
-# Confidence Trial Simulations
+# Highly Customizable, Parallelized Simulations of Frequentist Confidence Clinical Trials
 
-This package performs simulations of <strong>frequentist confidence trials</strong>. The analysis of trial results is carried out using the `confidenceCurves` package and all details about frequentist confidence analyis may be found there.
+Simulate one or many frequentist confidence clinical trials based on a specified set of parameters.  From a two-arm, single-stage trial to a perpetually run Adaptive Platform Trial, this package offers vast flexibility to customize your trial and observe operational characterisitics over thousands of instances.
+
+The analysis of trial results is carried out using the `confidenceCurves` package and all details about frequentist confidence analyis may be found there.
 
 ## Trial Designs
 The complexity of the design of the trial being simulated varies from a two-arm one-stage trial, to a Multi-Arm Multi-Stage (**MAMS**) Trial through to an **Adaptive Platform Trial**. The trial design features are specified by a parameter list that is fed into the `runSingleTrial` function via the `inputs` field. There is an example parameter list named ```inputs``` which may be loaded by using:
