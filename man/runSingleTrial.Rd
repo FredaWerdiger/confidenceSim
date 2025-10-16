@@ -94,9 +94,8 @@ inputs <- list(
  special = paste0(0.5, '_', 0.6) # passing the response rates to special to add to the output
 )
 # run a single simulation with these settings
-conf <- runSingleTrial(input=inputs, save.plot=FALSE, print=TRUE, directory = '')
-# run 4 simulations with these settings
-conf <- lapply(1:4, runSingleTrial, inputs=inputs,  save.plot=FALSE, print=FALSE, directory = '')
+conf <- runSingleTrial(input=inputs, save.plot=FALSE,
+save.text=FALSE, print=TRUE, directory = '')
 }
 \seealso{
 \code{\link[confidenceCurves:makeConfidenceCurves]{confidenceCurves::makeConfidenceCurves()}}
