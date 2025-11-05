@@ -14,12 +14,12 @@
 #' One of two options for expressing analysis times. Either 'info.rates' or 'looks' must be specified.
 #' @param looks Analysis times expressed by number of patients accrued at each point. Expects a vector
 #' with the last item being equal to the maximum sample size. For example.
-#' looks for a three stage trial with maximum sample size of 300 and analysis planned every 100 patients is c(100, 100, 100).
+#' looks for a three stage trial with maximum sample size of 300 and analysis planned every 100 patients is c(100, 200, 300).
 #' One of two options for expressing analysis times. Either 'info.rates' or 'looks' must be specified.
 #' @param as.type Time of alpha spending function to use. Options are as outlined by 'rpact'.
-#' Default is 'asOF' \(O'Brien-Fleming-type\).
+#' Default is `asOF` (O'Brien-Fleming-type).
 #'
-#' @return Returns an 'rpact' TrialDesign object.
+#' @return Returns an `rpact` TrialDesign object.
 #' @seealso [rpact::getDesignGroupSequential()]
 #' @export
 #'
@@ -65,7 +65,7 @@ getGSDesign <- function(info.rates=NULL, looks=NULL,  as.type="asOF"){
 
 #' Get Confidence Levels from Group Sequential Bounds
 #' @description Derive confidence-based decision thresholds for efficacy and inferiority from a group sequential design.
-#' @param design TrialDesign object generated from 'getGSDesign'.
+#' @param design TrialDesign object generated from `getGSDesign`.
 #' @seealso [getGSDesign()]
 #'
 #' @return List of values:
