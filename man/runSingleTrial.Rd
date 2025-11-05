@@ -12,7 +12,8 @@ runSingleTrial(
   show = "BENEFIT",
   directory = "",
   reproduce = FALSE,
-  print = FALSE
+  verbose = FALSE,
+  seed = NULL
 )
 }
 \arguments{
@@ -23,7 +24,7 @@ An example parameter list can be loaded using \code{data(inputs)}.}
 
 \item{save.plot}{Whether or not to save confidence curve plot with the result.TRUE (yes) or FALSE (no).
 When running multiple simulations, \code{FALSE} is recommended. If \code{TRUE}, files will be saved to the specified directory.
-The filename is automatically generated according to trial settings. Default is FALSE. Passed to makeConfidenceCurves function.}
+The filename is automatically generated according to trial settings. Default is FALSE. Passed to \code{makeConfidenceCurves}.}
 
 \item{save.text}{Whether or not to save results to directory. Default is TRUE.}
 
@@ -37,12 +38,15 @@ Results are saved in the same places as the Random States. If \code{save.text ==
 \item{reproduce}{To reproduce a result from saved Random States. If setting as TRUE, make sure the directory parameter points to the location (the node subdirectory)
 where the Random States are saved. The results will be saved to this directory. If set as FALSE (default), results and Random States are saved to the node subdirectory.}
 
-\item{print}{Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
-Not recommended if running a high number of simulation.}
+\item{verbose}{Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
+Not recommended if running a high number of simulations.}
+
+\item{seed}{Option to set the seed. Default is NULL.}
 }
 \value{
 Object where each line is the result of confidence analysis for a given arm, at a given stage.
-The number of lines is number experimental treatments * number of stages. E.g. A two-arm-two-stage trial returns a two-line object.
+The number of lines is the number experimental treatments * number of stages, e.g., A two-arm-two-stage trial returns a two-line object.
+However, if the trial is stopped after the first stage, only one line is returned.
 
 Attributes in output object:
 \itemize{
@@ -69,10 +73,10 @@ Attributes in output object:
 Simulates a group sequential clinical trial whose result is evaluated via frequentist confidence analysis.
 }
 \details{
-Run simulations of a confidence based adaptive clinical trial for any number of arms and stages.
-At each analysis point, the confidence in treatment benefit and futility is evaluation and arms may be dropped or continued based on the trial settings.
+Run simulations of a confidence-based adaptive clinical trial for any number of arms and stages.
+At each analysis point, the confidence in treatment benefit and futility is evaluated and arms may be dropped or continued based on the trial settings.
 The trial may also be run perpetually, with new treatment arms being added once arms are dropped, as an adaptive platform trial.
-The confidence-based thresholds are derived using alpha spending function, or specified with a fixed alpha.
+The confidence-based thresholds are derived using an alpha spending function, or specified with a fixed alpha.
 }
 \examples{
 # Example of input list to generate a two-arm-two-stage trial with binary outcome data
@@ -95,7 +99,10 @@ inputs <- list(
 )
 # run a single simulation with these settings
 conf <- runSingleTrial(input=inputs, save.plot=FALSE,
-save.text=FALSE, print=TRUE, directory = '')
+save.text=FALSE, verbose=TRUE, directory = '')
+}
+\references{
+Frequentist confidence analysis is based on Marschner (2024) \doi{https://doi.org/10.1002/sim.10000}.
 }
 \seealso{
 \code{\link[confidenceCurves:makeConfidenceCurves]{confidenceCurves::makeConfidenceCurves()}}

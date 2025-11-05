@@ -7,6 +7,7 @@
 #' To generate the stopping thresholds, specify either looks or information rates, and the alpha spending function if
 #' difference from O-Brien-Fleming-type.
 #'
+#'
 #' @param info.rates Analysis times expressed as rate of information accrual. Expects a vector
 #' with the last item representing the final analysis and equal to 1.
 #' For example, information rates for two-stage trial with interim analysis half way through is c(0.5, 1).
@@ -46,7 +47,7 @@ getGSDesign <- function(info.rates=NULL, looks=NULL,  as.type="asOF"){
   }
   if (! as.type %in% c("OF", "P", "WT", "PT", "HP", "WToptimum", "asP", "asOF", "asKD",
                        "asHSD", "asUser", "noEarlyEfficacy")){
-    print(paste0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
+    message(paste0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
     as.type = "asOF"
   }
   # using a one-sided test for confidence threshold
@@ -307,7 +308,7 @@ getparlist = function(looks=seq(500,1000,100),
   parlist$final.visit = final.visit
 
   if (!toupper(multiarm.mode) %in% c("ALL PROMISING", "SELECT BEST", "DROP WORST", "CONFIDENCE-BASED", "MONITOR FUTILITY")){
-    print(paste0("Mulitarm mode option ", multiarm.mode, " not available. Changing to default (CONFIDENCE-BASED)"))
+    warning(paste0("Mulitarm mode option ", multiarm.mode, " not available. Changing to default (CONFIDENCE-BASED)"))
     multiarm.mode = "CONFIDENCE-BASED"
   }
 
@@ -325,7 +326,7 @@ getparlist = function(looks=seq(500,1000,100),
     # decision thresholds via rpact
     if (! as.type %in% c("OF", "P", "WT", "PT", "HP", "WToptimum", "asP", "asOF", "asKD",
                          "asHSD", "asUser", "noEarlyEfficacy")){
-      print(paste0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
+      warning(paste0("Alpha spending option ",as.type, " not available. Changing to default (asOF)."))
       as.type = "asOF"
     }
 
@@ -344,7 +345,7 @@ getparlist = function(looks=seq(500,1000,100),
 
   # response rates and accrual
   if (!toupper(outcome.type) %in% c("BINARY", "ORDINAL", "CONTINUOUS")){
-    print(paste0("Outcome type ", outcome.type, " not in options."))
+    warning(paste0("Outcome type ", outcome.type, " not in options."))
   }
   parlist$outcome.type = toupper(outcome.type)
 
@@ -358,14 +359,14 @@ getparlist = function(looks=seq(500,1000,100),
     parlist$resprate = resprate
     parlist$outcome.type = toupper(outcome.type)
     if(outcome.type != "BINARY"){
-      print("Outcome type changed to BINARY according to numeric response rate")
+      warning("Outcome type changed to BINARY according to numeric response rate")
       parlist$outcome.type = "BINARY"
     }
   } else if (is.list(resprate)){
     # check if each has two items (mean and std)
     if (length(resprate[1])==2){
       if (outcome.type != "CONTINUOUS") {
-        print("Outcome type changed to CONTINUOUS according to list of mean/std response rate")
+        warning("Outcome type changed to CONTINUOUS according to list of mean/std response rate")
         parlist$outcome.type = "CONTINUOUS"}
     }
     parlist$resprate = resprate
@@ -390,7 +391,7 @@ getparlist = function(looks=seq(500,1000,100),
 
   # check if there are more response rates than allocations
   if ((length(resprate) == length(alloc.ratio)) & perpetual==TRUE){
-    print("No extra treaments provided. Turning off perpertual.")
+    warning("No extra treaments provided. Turning off perpertual.")
     parlist$perpetual = FALSE
   }
 

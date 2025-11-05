@@ -2,17 +2,19 @@
 #' @description Simulates a group sequential clinical trial whose result is evaluated via frequentist confidence analysis.
 #'
 #' @details
-#' Run simulations of a confidence based adaptive clinical trial for any number of arms and stages.
-#' At each analysis point, the confidence in treatment benefit and futility is evaluation and arms may be dropped or continued based on the trial settings.
+#' Run simulations of a confidence-based adaptive clinical trial for any number of arms and stages.
+#' At each analysis point, the confidence in treatment benefit and futility is evaluated and arms may be dropped or continued based on the trial settings.
 #' The trial may also be run perpetually, with new treatment arms being added once arms are dropped, as an adaptive platform trial.
-#' The confidence-based thresholds are derived using alpha spending function, or specified with a fixed alpha.
+#' The confidence-based thresholds are derived using an alpha spending function, or specified with a fixed alpha.
 #' @seealso [confidenceCurves::makeConfidenceCurves()]
+#' @references Frequentist confidence analysis is based on Marschner (2024) \doi{https://doi.org/10.1002/sim.10000}.
+
 #' @param sim.no Simulation number, when running mutiple simulations of a trial.
 #' @param inputs A list of items fed to the function which parameterize the trial to be simulated.
 #' An example parameter list can be loaded using `data(inputs)`.
 #' @param save.plot Whether or not to save confidence curve plot with the result.TRUE (yes) or FALSE (no).
 #'  When running multiple simulations, `FALSE` is recommended. If `TRUE`, files will be saved to the specified directory.
-#'  The filename is automatically generated according to trial settings. Default is FALSE. Passed to makeConfidenceCurves function.
+#'  The filename is automatically generated according to trial settings. Default is FALSE. Passed to `makeConfidenceCurves`.
 #' @param show If saving confidence curves, what to show on the confidence density plot. Options are "BENEFIT" (default), "LMB" (lack of meaningful benefit),
 #' "MB" (meaningful benefit) or "EQUIV" (equivalence). Passed to `makeConfidenceCurves`.
 #' @param save.text Whether or not to save results to directory. Default is TRUE.
@@ -21,10 +23,12 @@
 #' Results are saved in the same places as the Random States. If `save.text == FALSE` nothing is saved to `directory`.
 #' @param reproduce To reproduce a result from saved Random States. If setting as TRUE, make sure the directory parameter points to the location (the node subdirectory)
 #' where the Random States are saved. The results will be saved to this directory. If set as FALSE (default), results and Random States are saved to the node subdirectory.
-#' @param print Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
-#' Not recommended if running a high number of simulation.
+#' @param verbose Whether to print out text (TRUE) or not (FALSE). Useful to observe the trial process and decision-making while the simulation is running.
+#' Not recommended if running a high number of simulations.
+#' @param seed Option to set the seed. Default is NULL.
 #' @return Object where each line is the result of confidence analysis for a given arm, at a given stage.
-#' The number of lines is number experimental treatments * number of stages. E.g. A two-arm-two-stage trial returns a two-line object.
+#' The number of lines is the number experimental treatments * number of stages, e.g., A two-arm-two-stage trial returns a two-line object.
+#' However, if the trial is stopped after the first stage, only one line is returned.
 #' @return Attributes in output object:
 #' \itemize{
 #' \item{sim.no: simulation number}
@@ -69,7 +73,7 @@
 #')
 #' # run a single simulation with these settings
 #'conf <- runSingleTrial(input=inputs, save.plot=FALSE,
-#'save.text=FALSE, print=TRUE, directory = '')
+#'save.text=FALSE, verbose=TRUE, directory = '')
 
 
 ####################
@@ -84,7 +88,8 @@ runSingleTrial <- function(
     show="BENEFIT",
     directory="",
     reproduce=FALSE,
-    print=FALSE){
+    verbose=FALSE,
+    seed=NULL){
 
   # making sure directory ends with a slash
   if (! is.null(directory)){
@@ -103,7 +108,9 @@ runSingleTrial <- function(
 
   # check if inputs were provided
   if (is.null(inputs)){
-    print("No inputs were provided. Using example design settings.")
+    if (verbose){
+      print("No inputs were provided. Using example design settings.")
+    }
     parlist = getparlist()
   } else if (is.list(inputs)){
     parlist = do.call(getparlist, inputs)
@@ -117,7 +124,9 @@ runSingleTrial <- function(
   } else {
     # check if a seed has been explicitly set
     if (!exists(".Random.seed", envir = .GlobalEnv)){
-      set.seed(613)
+      if(!is.null(seed)){
+         set.seed(seed)
+      }
     }
     # save state
     if (save.text){
@@ -174,7 +183,9 @@ runSingleTrial <- function(
       # extend number of looks to cover nmax.followup
       parlist$num.looks = floor(nmax.followup/diff[1])
     } else{
-      print("Interim length uneven, can't extend number of looks.")
+      if (verbose){
+        print("Interim length uneven, can't extend number of looks.")
+      }
     }
   }
 
@@ -261,7 +272,7 @@ runSingleTrial <- function(
     }
 
     # print out
-    if (print){
+    if (verbose){
       print(paste0("Interim ", j, "/", parlist$num.looks, " (N=", n.at.look, ")."))
     }
 
@@ -341,7 +352,7 @@ runSingleTrial <- function(
             if (!length(parlist$resprate) >= new.arms[y]){
 
               # print out
-              if (print){print("There are no more treatments to add.")}
+              if (verbose){print("There are no more treatments to add.")}
 
               # turn off perpetual setting
               perpetual = FALSE
@@ -395,7 +406,7 @@ runSingleTrial <- function(
         # reallocated to remaining arms
 
         # print out
-        if (print){
+        if (verbose){
           print(paste0("Allocation probability for arms ",
                        paste(sapply(dropped.arms, paste, collapse=":"), collapse=", "),
                        " set to 0."))
@@ -477,7 +488,7 @@ runSingleTrial <- function(
 
         # if we have dropped the arm at a previous stage, don't evaluate anymore
         if (drop.arms[[i]]==1){
-          print(paste0("Skipping treatment ", i ,"."))
+          if (verbose) {print(paste0("Skipping treatment ", i ,"."))}
           if (!perpetual){
             next
           }
@@ -503,7 +514,7 @@ runSingleTrial <- function(
         pairwise.size = sum(arm.bool)
 
         # print out
-        if (print){
+        if (verbose){
           print(paste0("Treatment ", i, "/", num.treat.arms," vs control (N=", pairwise.size, ")."))
         }
 
@@ -519,7 +530,7 @@ runSingleTrial <- function(
         d <- num[[i + 1]]
 
         # print out
-        if (print){
+        if (verbose){
           print(paste0("Treatment ", i, "/", num.treat.arms, " vs control ", "(N=", d + c, ")."))
         }
 
@@ -612,7 +623,7 @@ runSingleTrial <- function(
 
         # if we have dropped the arm at a previous stage, don't evaluate anymore
         if (drop.arms[[i]]==1){
-          if (print){
+          if (verbose){
             print(paste0("Skipping treatment ", i ,"."))
           }
           next
@@ -638,7 +649,7 @@ runSingleTrial <- function(
         pairwise.size = sum(arm.bool)
 
         # print out
-        if (print){
+        if (verbose){
           print(paste0("Treatment ", i, "/", num.treat.arms," vs control (N=", pairwise.size, ")."))
         }
 
@@ -739,7 +750,7 @@ runSingleTrial <- function(
 
         # if we have dropped the arm at a previous stage, don't evaluate anymore
         if (drop.arms[[i]]==1){
-          if (print){
+          if (verbose){
             print(paste0("Skipping treatment ", i ,"."))
           }
           next
@@ -759,7 +770,7 @@ runSingleTrial <- function(
         pairwise.size = sum(arm.bool) # size of this analysis
 
         # print out
-        if (print){
+        if (verbose){
           print(paste0("Treatment ", i, "/", num.treat.arms," vs control ( N=", pairwise.size, ")."))
         }
 
@@ -860,7 +871,7 @@ runSingleTrial <- function(
     # all remaining arms stop?
     # remaining arms = treatment arms - dropped arms
     if (sum(grepl('stop', action.all.arms, fixed=TRUE))==(num.treat.arms-sum(drop.arms))){
-      if (print){print("All arms stopped. Stopping trial.")}
+      if (verbose){print("All arms stopped. Stopping trial.")}
       break
     }
 
@@ -882,7 +893,7 @@ runSingleTrial <- function(
 
       drop.arms[which(do.call("rbind", list(stop.bad)) == 1)] = 1
       # print out
-      if (print){
+      if (verbose){
         print(paste0("Stopping treatment ",
                      paste(which(do.call("rbind", list(stop.bad)) == 1), collapse=", "),
                      "."))
@@ -904,7 +915,7 @@ runSingleTrial <- function(
 
       # if any are stop for good, end trial
       if (sum(stop.good)>0){
-        if (print){print("SELECT BEST: Stop for efficacy." )}
+        if (verbose){print("SELECT BEST: Stop for efficacy." )}
         break
       }
 
@@ -912,7 +923,7 @@ runSingleTrial <- function(
       best = which.max(do.call("rbind", conf.arms))
 
       # print out
-      if (print){print(paste0("SELECT BEST: Treament ", best, " continues."))}
+      if (verbose){print(paste0("SELECT BEST: Treament ", best, " continues."))}
 
       # drop the rest
       for (j in 1:length(drop.arms)){
@@ -930,7 +941,7 @@ runSingleTrial <- function(
         drop.arms[[which.min(do.call("rbind", conf.arms))]] = 1
 
         # print out
-        if (print){print(paste0("DROP WORST: Dropping treatment ",
+        if (verbose){print(paste0("DROP WORST: Dropping treatment ",
                                 which.min(do.call("rbind", conf.arms)), "." ))}
 
       }
@@ -945,7 +956,7 @@ runSingleTrial <- function(
 
         # print out
 
-        if (print){print(
+        if (verbose){print(
           paste0(
             "CONFIDENCE-BASED: Drop Treatments ",
             paste(

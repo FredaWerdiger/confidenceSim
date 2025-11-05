@@ -16,6 +16,6 @@ inputs <- list(
 )
 # run a single simulation with these settings
 
-conf <- runSingleTrial(input=inputs, save.plot=FALSE, print=FALSE, save.text = FALSE)
+conf <- runSingleTrial(input=inputs, save.plot=FALSE, verbose=FALSE, save.text = FALSE)
 
 testthat::expect_equal(length(conf), 17)

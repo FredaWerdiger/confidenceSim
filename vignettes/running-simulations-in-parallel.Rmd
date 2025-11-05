@@ -91,9 +91,9 @@ if (!file.exists(error_log)) {
 We will use a `tryCatch` structure. It is a bit messier so we have to manually export all variables into the clusters with `clusterExport`, something we didn't have to do above, for some reason.
 
 ```         
-print <- FALSE
+verbose <- FALSE
 save.plot <- TRUE
-clusterExport(cl, varlist = c("runSingleTrial", "inputs", "directory", "print", "save.plot", "error_log"))
+clusterExport(cl, varlist = c("runSingleTrial", "inputs", "directory", "verbose", "save.plot", "error_log"))
 ```
 
 Now encase the trial simulation in `tryCatch` and append the error to the error log file. The error message is printed along time a reference to the `special` parameter from `inputs`, which can be used to pass anything to `inputs`. In this case we've created a string for response rates.
@@ -101,7 +101,7 @@ Now encase the trial simulation in `tryCatch` and append the error to the error 
 ```         
 res.list <- pblapply(1:num.sims, function(i) {
   tryCatch(
-    runSingleTrial(i, inputs=inputs, save.plot=save.plot, directory=directory, print=print),
+    runSingleTrial(i, inputs=inputs, save.plot=save.plot, directory=directory, verbose=verbose),
     error = function(e) {
       # Append error message to the log file
       message <- paste(Sys.time(), " - Error in simulation ", i, " for effect ",
