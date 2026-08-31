@@ -1,3 +1,6 @@
 # confidenceSim 0.1.1
 
-* Initial CRAN submission.
+## Changes
+
+* Updated the package version following CRAN archival.
+* Corrected a spelling error in the `DESCRIPTION` file.
