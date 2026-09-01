@@ -14,14 +14,14 @@ One of two options for expressing analysis times. Either 'info.rates' or 'looks'
 
 \item{looks}{Analysis times expressed by number of patients accrued at each point. Expects a vector
 with the last item being equal to the maximum sample size. For example.
-looks for a three stage trial with maximum sample size of 300 and analysis planned every 100 patients is c(100, 100, 100).
+looks for a three stage trial with maximum sample size of 300 and analysis planned every 100 patients is c(100, 200, 300).
 One of two options for expressing analysis times. Either 'info.rates' or 'looks' must be specified.}
 
 \item{as.type}{Time of alpha spending function to use. Options are as outlined by 'rpact'.
-Default is 'asOF' \(O'Brien-Fleming-type\).}
+Default is \code{asOF} (O'Brien-Fleming-type).}
 }
 \value{
-Returns an 'rpact' TrialDesign object.
+Returns an \code{rpact} TrialDesign object.
 }
 \description{
 Generate boundaries for a group sequential design using a one-sided test

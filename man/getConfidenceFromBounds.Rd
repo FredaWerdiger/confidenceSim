@@ -7,7 +7,7 @@
 getConfidenceFromBounds(design)
 }
 \arguments{
-\item{design}{TrialDesign object generated from 'getGSDesign'.}
+\item{design}{TrialDesign object generated from \code{getGSDesign}.}
 }
 \value{
 List of values:
